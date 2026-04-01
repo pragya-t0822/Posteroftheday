@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPermissions, createPermission, updatePermission, deletePermission } from '../../features/permissions/permissionSlice';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 
 const moduleColors = {
     users: { bg: 'bg-blue-50', text: 'text-blue-600', ring: 'ring-blue-500/10', icon: 'from-blue-500 to-blue-600' },
@@ -142,14 +143,21 @@ export default function Permissions() {
         : grouped;
 
     const handleSave = async (data) => {
-        if (data.id) await dispatch(updatePermission(data));
-        else await dispatch(createPermission(data));
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updatePermission(data)) : await dispatch(createPermission(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Create Failed', result.payload);
         setModal(null);
         dispatch(fetchPermissions());
+        alertSuccess(isEdit ? 'Permission Updated' : 'Permission Created');
     };
 
     const handleDelete = async (id) => {
-        await dispatch(deletePermission(id));
+        const confirmed = await alertConfirmDelete('this permission');
+        if (!confirmed) return;
+        const result = await dispatch(deletePermission(id));
+        if (result.error) return alertError('Delete Failed', result.payload);
+        dispatch(fetchPermissions());
+        alertSuccess('Permission Deleted');
     };
 
     return (
@@ -280,7 +288,7 @@ export default function Permissions() {
                                                 <p className="text-xs text-gray-400 max-w-[200px] truncate hidden lg:block">{p.description}</p>
                                             )}
                                             {/* Actions */}
-                                            <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="inline-flex items-center gap-1 transition-opacity">
                                                 <button onClick={() => setModal(p)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors" title="Edit">
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
                                                 </button>

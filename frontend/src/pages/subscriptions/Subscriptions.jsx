@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPackages, createPackage, updatePackage, deletePackage, togglePackage } from '../../features/subscriptions/subscriptionSlice';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 
 const durationLabels = { monthly: 'Monthly', quarterly: 'Quarterly', half_yearly: 'Half-Yearly', yearly: 'Yearly' };
 const durationGradients = {
@@ -62,7 +63,7 @@ function PackageModal({ pkg, onClose, onSave }) {
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <div>
                         <h3 className="text-lg font-bold text-gray-900">{pkg ? 'Edit Package' : 'New Package'}</h3>
-                        <p className="text-xs text-gray-400 mt-0.5">{pkg ? 'Update the subscription details' : 'Create a new subscription plan'}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{pkg ? 'Update package details' : 'Create a new package'}</p>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors">
                         <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -197,17 +198,21 @@ export default function Subscriptions() {
     useEffect(() => { dispatch(fetchPackages()); }, [dispatch]);
 
     const handleSave = async (data) => {
-        if (data.id) {
-            await dispatch(updatePackage(data));
-        } else {
-            await dispatch(createPackage(data));
-        }
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updatePackage(data)) : await dispatch(createPackage(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Create Failed', result.payload);
         setModal(null);
         dispatch(fetchPackages());
+        alertSuccess(isEdit ? 'Package Updated' : 'Package Created');
     };
 
     const handleDelete = async (id) => {
-        await dispatch(deletePackage(id));
+        const confirmed = await alertConfirmDelete('this package');
+        if (!confirmed) return;
+        const result = await dispatch(deletePackage(id));
+        if (result.error) return alertError('Delete Failed', result.payload);
+        dispatch(fetchPackages());
+        alertSuccess('Package Deleted');
     };
 
     const handleToggle = async (id) => {
@@ -222,7 +227,7 @@ export default function Subscriptions() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Subscription Packages</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Packages</h2>
                     <p className="text-sm text-gray-400 mt-1">Manage pricing plans for your customers</p>
                 </div>
                 <button
@@ -295,7 +300,7 @@ export default function Subscriptions() {
                         </svg>
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900">No packages yet</h3>
-                    <p className="text-sm text-gray-400 mt-1 mb-5">Create your first subscription package to get started.</p>
+                    <p className="text-sm text-gray-400 mt-1 mb-5">Create your first package to get started.</p>
                     <button onClick={() => setModal('new')} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

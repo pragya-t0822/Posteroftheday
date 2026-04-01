@@ -5,10 +5,11 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Users from './pages/users/Users';
 import Roles from './pages/roles/Roles';
 import Permissions from './pages/permissions/Permissions';
-import Posters from './pages/posters/Posters';
+import FrameLayers from './pages/posters/Posters';
 import Settings from './pages/settings/Settings';
-import Subscriptions from './pages/subscriptions/Subscriptions';
+import Packages from './pages/subscriptions/Subscriptions';
 import Customers from './pages/customers/Customers';
+import CustomerDetails from './pages/customers/CustomerDetails';
 import Categories from './pages/categories/Categories';
 import Frames from './pages/frames/Frames';
 import AdminLayout from './components/AdminLayout';
@@ -39,9 +40,10 @@ export default function App() {
                     }
                 >
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/posters" element={<Posters />} />
-                    <Route path="/subscriptions" element={<ProtectedRoute permission="subscriptions.view"><Subscriptions /></ProtectedRoute>} />
+                    <Route path="/frame-layers" element={<FrameLayers />} />
+                    <Route path="/packages" element={<ProtectedRoute permission="subscriptions.view"><Packages /></ProtectedRoute>} />
                     <Route path="/customers" element={<ProtectedRoute permission="customers.view"><Customers /></ProtectedRoute>} />
+                    <Route path="/customers/:id" element={<ProtectedRoute permission="customers.view"><CustomerDetails /></ProtectedRoute>} />
                     <Route path="/users" element={<ProtectedRoute permission="users.view"><Users /></ProtectedRoute>} />
                     <Route path="/roles" element={<ProtectedRoute permission="roles.view"><Roles /></ProtectedRoute>} />
                     <Route path="/permissions" element={<ProtectedRoute permission="permissions.view"><Permissions /></ProtectedRoute>} />

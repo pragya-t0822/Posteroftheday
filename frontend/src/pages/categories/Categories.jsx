@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 import {
     fetchCategories,
     fetchCategoriesFlat,
@@ -381,7 +382,7 @@ function TreeNode({ node, depth, onEdit, onDelete, onAddChild, search }) {
                 </div>
 
                 {/* Actions — visible on hover */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <div className="flex items-center gap-1 transition-opacity shrink-0">
                     <button onClick={() => onAddChild(node)} title="Add sub-category"
                         className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -429,16 +430,22 @@ export default function Categories() {
     };
 
     const handleSave = async (data) => {
-        if (data.id) await dispatch(updateCategory(data));
-        else await dispatch(createCategory(data));
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updateCategory(data)) : await dispatch(createCategory(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Create Failed', result.payload);
         setModal(null);
         setParentHint(null);
         reload();
+        alertSuccess(isEdit ? 'Category Updated' : 'Category Created');
     };
 
     const handleDelete = async (id) => {
+        const confirmed = await alertConfirmDelete('this category');
+        if (!confirmed) return;
         const result = await dispatch(deleteCategory(id));
-        if (!result.error) reload();
+        if (result.error) return alertError('Delete Failed', result.payload);
+        reload();
+        alertSuccess('Category Deleted');
     };
 
     const handleAddChild = (parentNode) => {

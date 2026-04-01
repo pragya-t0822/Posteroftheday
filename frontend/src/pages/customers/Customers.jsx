@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { fetchCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../features/customers/customerManagementSlice';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 
 const avatarColors = [
     'from-rose-500 to-pink-600',
@@ -261,6 +263,7 @@ function Pagination({ pagination, onPageChange }) {
 /* ──────────── Main Page ──────────── */
 export default function Customers() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { items: customers, loading, pagination } = useSelector((state) => state.customerManagement);
     const [modal, setModal] = useState(null);
     const [viewTarget, setViewTarget] = useState(null);
@@ -295,18 +298,21 @@ export default function Customers() {
     };
 
     const handleSave = async (data) => {
-        if (data.id) {
-            await dispatch(updateCustomer(data));
-        } else {
-            await dispatch(createCustomer(data));
-        }
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updateCustomer(data)) : await dispatch(createCustomer(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Create Failed', result.payload);
         setModal(null);
         loadCustomers({ page: pagination.current_page });
+        alertSuccess(isEdit ? 'Customer Updated' : 'Customer Created');
     };
 
     const handleDelete = async (id) => {
-        await dispatch(deleteCustomer(id));
+        const confirmed = await alertConfirmDelete('this customer');
+        if (!confirmed) return;
+        const result = await dispatch(deleteCustomer(id));
+        if (result.error) return alertError('Delete Failed', result.payload);
         loadCustomers({ page: pagination.current_page });
+        alertSuccess('Customer Deleted');
     };
 
     return (
@@ -424,10 +430,10 @@ export default function Customers() {
                                     </td>
                                     {/* Actions */}
                                     <td className="px-6 py-3.5 text-right">
-                                        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="inline-flex items-center gap-1 transition-opacity">
                                             {/* View */}
                                             <button
-                                                onClick={() => setViewTarget(c)}
+                                                onClick={() => navigate(`/customers/${c.id}`)}
                                                 className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
                                                 title="View"
                                             >

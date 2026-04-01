@@ -1,0 +1,689 @@
+{
+	"info": {
+		"name": "Poster of the Day API",
+		"description": "Complete API collection for Poster of the Day — Laravel 12 + Sanctum Auth",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8000/api" },
+		{ "key": "token", "value": "" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/register",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "201 Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Admin User\",\n    \"email\": \"admin@example.com\",\n    \"created_at\": \"2026-04-01T10:00:00.000000Z\"\n  },\n  \"token\": \"1|abc123def456...\",\n  \"permissions\": []\n}"
+						},
+						{
+							"name": "422 Validation Error",
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"body": "{\n  \"message\": \"The email has already been taken.\",\n  \"errors\": {\n    \"email\": [\"The email has already been taken.\"]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.token) { pm.collectionVariables.set('token', json.token); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/login",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Admin User\",\n    \"email\": \"admin@example.com\",\n    \"role\": { \"id\": 1, \"name\": \"Super Admin\", \"slug\": \"super_admin\" }\n  },\n  \"token\": \"2|xyz789...\",\n  \"permissions\": [\"dashboard.view\", \"users.view\", \"roles.view\"]\n}"
+						},
+						{
+							"name": "401 Invalid Credentials",
+							"status": "Unauthorized",
+							"code": 401,
+							"body": "{\n  \"message\": \"Invalid credentials\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Authenticated User",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/user",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						]
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Admin User\",\n    \"email\": \"admin@example.com\",\n    \"role\": { \"id\": 1, \"name\": \"Super Admin\", \"slug\": \"super_admin\" }\n  },\n  \"permissions\": [\"dashboard.view\", \"users.view\"]\n}"
+						}
+					]
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/logout",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						]
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"message\": \"Logged out successfully\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Customer Registration",
+			"item": [
+				{
+					"name": "Get Packages (Public)",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/customer/packages",
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Monthly Plan\",\n    \"slug\": \"monthly\",\n    \"duration_type\": \"monthly\",\n    \"duration_days\": 30,\n    \"price\": 99.00,\n    \"original_price\": 149.00,\n    \"discount_percent\": 33,\n    \"features\": [\"Unlimited posters\", \"All frames\"],\n    \"is_popular\": false,\n    \"is_active\": true\n  }\n]"
+						}
+					]
+				},
+				{
+					"name": "Register Customer",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/customer/register",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"package_id\": 1\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "201 Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n  \"user\": { \"id\": 5, \"name\": \"John Doe\", \"email\": \"john@example.com\" },\n  \"token\": \"5|abc...\",\n  \"subscription\": {\n    \"id\": 1,\n    \"package_name\": \"Monthly Plan\",\n    \"status\": \"pending\",\n    \"starts_at\": null,\n    \"ends_at\": null\n  },\n  \"requires_payment\": true,\n  \"permissions\": []\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Dashboard & Navigation",
+			"item": [
+				{
+					"name": "Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/dashboard/stats",
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"total_users\": 25,\n  \"total_roles\": 3,\n  \"total_permissions\": 18,\n  \"active_sessions\": 5\n}"
+						}
+					]
+				},
+				{
+					"name": "Navigation Menu",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/navigation",
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "[\n  {\n    \"id\": 1,\n    \"title\": \"Dashboard\",\n    \"icon\": \"LayoutDashboard\",\n    \"route\": \"/dashboard\",\n    \"children\": []\n  },\n  {\n    \"id\": 2,\n    \"title\": \"Frame Layers\",\n    \"icon\": \"Layers\",\n    \"route\": \"/frame-layers\",\n    \"children\": []\n  }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "List Roles",
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/roles",
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Super Admin\",\n    \"slug\": \"super_admin\",\n    \"description\": \"Full system access\",\n    \"is_active\": true,\n    \"permissions\": [\n      { \"id\": 1, \"name\": \"View Dashboard\", \"slug\": \"dashboard.view\", \"module\": \"dashboard\" }\n    ]\n  }\n]"
+						}
+					]
+				},
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/roles",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Editor\",\n  \"slug\": \"editor\",\n  \"description\": \"Can manage content\"\n}"
+						}
+					},
+					"response": [
+						{
+							"name": "201 Success",
+							"status": "Created",
+							"code": 201,
+							"body": "{\n  \"id\": 4,\n  \"name\": \"Editor\",\n  \"slug\": \"editor\",\n  \"description\": \"Can manage content\",\n  \"is_active\": true,\n  \"permissions\": []\n}"
+						}
+					]
+				},
+				{
+					"name": "Show Role",
+					"request": { "method": "GET", "url": "{{baseUrl}}/roles/1", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update Role",
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/roles/1",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Super Admin Updated\",\n  \"is_active\": true\n}" }
+					}
+				},
+				{
+					"name": "Delete Role",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/roles/4", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [
+						{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Role deleted\" }" },
+						{ "name": "403 Protected", "status": "Forbidden", "code": 403, "body": "{ \"message\": \"Cannot delete super_admin role\" }" }
+					]
+				},
+				{
+					"name": "Assign Permissions to Role",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/roles/1/permissions",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"permissions\": [1, 2, 3, 4, 5]\n}" }
+					},
+					"response": [
+						{
+							"name": "200 Success",
+							"status": "OK",
+							"code": 200,
+							"body": "{\n  \"id\": 1,\n  \"name\": \"Super Admin\",\n  \"permissions\": [\n    { \"id\": 1, \"slug\": \"dashboard.view\" },\n    { \"id\": 2, \"slug\": \"users.view\" }\n  ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Permissions",
+			"item": [
+				{
+					"name": "List Permissions",
+					"request": { "method": "GET", "url": "{{baseUrl}}/permissions", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "[\n  { \"id\": 1, \"name\": \"View Dashboard\", \"slug\": \"dashboard.view\", \"module\": \"dashboard\" },\n  { \"id\": 2, \"name\": \"View Users\", \"slug\": \"users.view\", \"module\": \"users\" }\n]" }]
+				},
+				{
+					"name": "Create Permission",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/permissions",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"View Reports\",\n  \"slug\": \"reports.view\",\n  \"module\": \"reports\",\n  \"description\": \"Can view analytics reports\"\n}" }
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 20,\n  \"name\": \"View Reports\",\n  \"slug\": \"reports.view\",\n  \"module\": \"reports\",\n  \"description\": \"Can view analytics reports\"\n}" }]
+				},
+				{
+					"name": "Update Permission",
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/permissions/1",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"View Dashboard Updated\"\n}" }
+					}
+				},
+				{
+					"name": "Delete Permission",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/permissions/20", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Permission deleted\" }" }]
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": { "method": "GET", "url": "{{baseUrl}}/users", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Admin User\",\n    \"email\": \"admin@example.com\",\n    \"role\": { \"id\": 1, \"name\": \"Super Admin\", \"slug\": \"super_admin\" }\n  }\n]" }]
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/users",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"New Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"password\": \"password123\",\n  \"role_id\": 2\n}" }
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 3,\n  \"name\": \"New Admin\",\n  \"email\": \"newadmin@example.com\",\n  \"role\": { \"id\": 2, \"name\": \"Admin\", \"slug\": \"admin\" }\n}" }]
+				},
+				{
+					"name": "Show User",
+					"request": { "method": "GET", "url": "{{baseUrl}}/users/1", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/users/3",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Admin\",\n  \"role_id\": 1\n}" }
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/users/3", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [
+						{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"User deleted\" }" },
+						{ "name": "403 Last Super Admin", "status": "Forbidden", "code": 403, "body": "{ \"message\": \"Cannot delete the last super admin\" }" }
+					]
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "List Customers",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/customers?search=&status=&per_page=10&page=1", "host": ["{{baseUrl}}"], "path": ["customers"], "query": [{ "key": "search", "value": "" }, { "key": "status", "value": "" }, { "key": "per_page", "value": "10" }, { "key": "page", "value": "1" }] },
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"current_page\": 1,\n  \"data\": [\n    {\n      \"id\": 5,\n      \"name\": \"John Doe\",\n      \"email\": \"john@example.com\",\n      \"phone\": \"9876543210\",\n      \"status\": \"active\",\n      \"role\": { \"id\": 3, \"name\": \"Customer\" }\n    }\n  ],\n  \"last_page\": 1,\n  \"per_page\": 10,\n  \"total\": 1\n}" }]
+				},
+				{
+					"name": "Create Customer",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/customers",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"9876543211\",\n  \"password\": \"password123\",\n  \"status\": \"active\"\n}" }
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 6,\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane@example.com\",\n  \"phone\": \"9876543211\",\n  \"status\": \"active\",\n  \"role\": { \"id\": 3, \"name\": \"Customer\" }\n}" }]
+				},
+				{
+					"name": "Show Customer",
+					"request": { "method": "GET", "url": "{{baseUrl}}/customers/5", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update Customer",
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/customers/5",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"John Updated\",\n  \"status\": \"inactive\"\n}" }
+					}
+				},
+				{
+					"name": "Delete Customer",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/customers/6", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Customer deleted\" }" }]
+				}
+			]
+		},
+		{
+			"name": "Subscription Packages",
+			"item": [
+				{
+					"name": "List Packages",
+					"request": { "method": "GET", "url": "{{baseUrl}}/subscription-packages", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Monthly Plan\",\n    \"slug\": \"monthly\",\n    \"duration_type\": \"monthly\",\n    \"duration_days\": 30,\n    \"price\": 99.00,\n    \"original_price\": 149.00,\n    \"discount_percent\": 33,\n    \"description\": \"Access all frames for 30 days\",\n    \"features\": [\"Unlimited posters\", \"All frames\", \"Priority support\"],\n    \"is_popular\": true,\n    \"is_active\": true,\n    \"sort_order\": 1\n  }\n]" }]
+				},
+				{
+					"name": "Create Package",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/subscription-packages",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Yearly Plan\",\n  \"slug\": \"yearly\",\n  \"duration_type\": \"yearly\",\n  \"duration_days\": 365,\n  \"price\": 799.00,\n  \"original_price\": 1188.00,\n  \"discount_percent\": 33,\n  \"description\": \"Best value — full year access\",\n  \"features\": [\"Unlimited posters\", \"All frames\", \"Priority support\", \"Early access\"],\n  \"is_popular\": true,\n  \"is_active\": true,\n  \"sort_order\": 4\n}" }
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 4,\n  \"name\": \"Yearly Plan\",\n  \"slug\": \"yearly\",\n  \"duration_type\": \"yearly\",\n  \"duration_days\": 365,\n  \"price\": 799.00\n}" }]
+				},
+				{
+					"name": "Show Package",
+					"request": { "method": "GET", "url": "{{baseUrl}}/subscription-packages/1", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update Package",
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/subscription-packages/1",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"price\": 129.00,\n  \"discount_percent\": 25\n}" }
+					}
+				},
+				{
+					"name": "Delete Package",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/subscription-packages/4", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Package deleted\" }" }]
+				},
+				{
+					"name": "Toggle Package Active",
+					"request": { "method": "PATCH", "url": "{{baseUrl}}/subscription-packages/1/toggle", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"id\": 1,\n  \"name\": \"Monthly Plan\",\n  \"is_active\": false\n}" }]
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "List Categories (Tree)",
+					"request": { "method": "GET", "url": "{{baseUrl}}/categories", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Festivals\",\n    \"slug\": \"festivals\",\n    \"parent_id\": null,\n    \"is_active\": true,\n    \"sort_order\": 1,\n    \"translations\": [\n      { \"id\": 1, \"language\": \"Hindi\", \"name\": \"त्योहार\" }\n    ],\n    \"recursive_children\": [\n      {\n        \"id\": 2,\n        \"name\": \"Diwali\",\n        \"slug\": \"diwali\",\n        \"parent_id\": 1,\n        \"recursive_children\": []\n      }\n    ]\n  }\n]" }]
+				},
+				{
+					"name": "List Categories (Flat)",
+					"request": { "method": "GET", "url": "{{baseUrl}}/categories/flat", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "[\n  { \"id\": 1, \"name\": \"Festivals\", \"parent_id\": null, \"translations\": [] },\n  { \"id\": 2, \"name\": \"Diwali\", \"parent_id\": 1, \"translations\": [] }\n]" }]
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/categories",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Birthday\",\n  \"slug\": \"birthday\",\n  \"description\": \"Birthday celebration frames\",\n  \"parent_id\": null,\n  \"sort_order\": 3,\n  \"is_active\": true,\n  \"translations\": [\n    { \"language\": \"Hindi\", \"name\": \"जन्मदिन\" },\n    { \"language\": \"Marathi\", \"name\": \"वाढदिवस\" }\n  ]\n}" }
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 3,\n  \"name\": \"Birthday\",\n  \"slug\": \"birthday\",\n  \"translations\": [\n    { \"language\": \"Hindi\", \"name\": \"जन्मदिन\" }\n  ],\n  \"recursive_children\": []\n}" }]
+				},
+				{
+					"name": "Show Category",
+					"request": { "method": "GET", "url": "{{baseUrl}}/categories/1", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/categories/1",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Festivals Updated\",\n  \"translations\": [\n    { \"language\": \"Hindi\", \"name\": \"त्योहार\" },\n    { \"language\": \"English\", \"name\": \"Festivals\" }\n  ]\n}" }
+					}
+				},
+				{
+					"name": "Delete Category",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/categories/3", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [
+						{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Category deleted\" }" },
+						{ "name": "422 Has Children", "status": "Unprocessable", "code": 422, "body": "{ \"message\": \"Cannot delete category with children\" }" }
+					]
+				}
+			]
+		},
+		{
+			"name": "Frames",
+			"item": [
+				{
+					"name": "List Frames",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/frames?search=&category_id=&is_active=&per_page=12&page=1", "host": ["{{baseUrl}}"], "path": ["frames"], "query": [{ "key": "search", "value": "" }, { "key": "category_id", "value": "" }, { "key": "is_active", "value": "" }, { "key": "per_page", "value": "12" }, { "key": "page", "value": "1" }] },
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"current_page\": 1,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Diwali Frame 1\",\n      \"slug\": \"diwali-frame-1\",\n      \"category_id\": 2,\n      \"file_path\": \"frames/abc123.png\",\n      \"file_name\": \"diwali-frame.png\",\n      \"mime_type\": \"image/png\",\n      \"file_size\": 245760,\n      \"is_active\": true,\n      \"sort_order\": 1,\n      \"category\": {\n        \"id\": 2,\n        \"name\": \"Diwali\",\n        \"translations\": [{ \"language\": \"Hindi\", \"name\": \"दिवाली\" }]\n      },\n      \"translations\": [\n        { \"language\": \"Hindi\", \"title\": \"दिवाली फ्रेम 1\" }\n      ]\n    }\n  ],\n  \"last_page\": 1,\n  \"per_page\": 12,\n  \"total\": 1\n}" }]
+				},
+				{
+					"name": "Create Frame",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/frames",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "title", "value": "Diwali Frame 1", "type": "text" },
+								{ "key": "slug", "value": "diwali-frame-1", "type": "text" },
+								{ "key": "category_id", "value": "2", "type": "text" },
+								{ "key": "frame", "type": "file", "src": "/path/to/frame.png" },
+								{ "key": "is_active", "value": "1", "type": "text" },
+								{ "key": "sort_order", "value": "1", "type": "text" },
+								{ "key": "translations", "value": "[{\"language\":\"Hindi\",\"title\":\"दिवाली फ्रेम 1\"}]", "type": "text" }
+							]
+						}
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 1,\n  \"title\": \"Diwali Frame 1\",\n  \"slug\": \"diwali-frame-1\",\n  \"file_path\": \"frames/abc123.png\",\n  \"category\": { \"id\": 2, \"name\": \"Diwali\" },\n  \"translations\": [{ \"language\": \"Hindi\", \"title\": \"दिवाली फ्रेम 1\" }]\n}" }]
+				},
+				{
+					"name": "Show Frame",
+					"request": { "method": "GET", "url": "{{baseUrl}}/frames/1", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update Frame (with file)",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/frames/1",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"description": "Uses POST with _method=PUT because Laravel doesn't support PUT with multipart/form-data",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "_method", "value": "PUT", "type": "text" },
+								{ "key": "title", "value": "Diwali Frame Updated", "type": "text" },
+								{ "key": "frame", "type": "file", "src": "/path/to/new-frame.png" },
+								{ "key": "translations", "value": "[{\"language\":\"Hindi\",\"title\":\"दिवाली फ्रेम अपडेट\"}]", "type": "text" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Frame",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/frames/1", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Frame deleted\" }" }]
+				},
+				{
+					"name": "Toggle Frame Active",
+					"request": { "method": "PATCH", "url": "{{baseUrl}}/frames/1/toggle", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"id\": 1,\n  \"title\": \"Diwali Frame 1\",\n  \"is_active\": false\n}" }]
+				}
+			]
+		},
+		{
+			"name": "Frame Layers",
+			"item": [
+				{
+					"name": "List Frame Layers",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{baseUrl}}/frame-layers?search=&frame_id=&category_id=&language=&is_active=&per_page=12&page=1", "host": ["{{baseUrl}}"], "path": ["frame-layers"], "query": [{ "key": "search", "value": "" }, { "key": "frame_id", "value": "" }, { "key": "category_id", "value": "" }, { "key": "language", "value": "" }, { "key": "is_active", "value": "" }, { "key": "per_page", "value": "12" }, { "key": "page", "value": "1" }] },
+						"header": [{ "key": "Accept", "value": "application/json" }]
+					},
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"current_page\": 1,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Diwali Business Layer\",\n      \"slug\": \"diwali-business-layer\",\n      \"frame_id\": 1,\n      \"file_path\": \"frame-layers/xyz789.png\",\n      \"file_name\": \"layer.png\",\n      \"mime_type\": \"image/png\",\n      \"file_size\": 102400,\n      \"is_active\": true,\n      \"sort_order\": 1,\n      \"parameters\": [\n        { \"type\": \"photo\", \"label\": \"Photo Upload\", \"placeholder\": \"\", \"required\": true, \"position\": { \"x\": 50, \"y\": 20 } },\n        { \"type\": \"text\", \"label\": \"Business Name\", \"placeholder\": \"Enter your business\", \"required\": true, \"position\": { \"x\": 50, \"y\": 80 } },\n        { \"type\": \"instagram\", \"label\": \"Instagram\", \"placeholder\": \"@handle\", \"required\": false, \"position\": { \"x\": 30, \"y\": 92 } },\n        { \"type\": \"whatsapp\", \"label\": \"WhatsApp\", \"placeholder\": \"Number\", \"required\": false, \"position\": { \"x\": 70, \"y\": 92 } }\n      ],\n      \"frame\": {\n        \"id\": 1,\n        \"title\": \"Diwali Frame 1\",\n        \"category\": { \"id\": 2, \"name\": \"Diwali\", \"translations\": [] },\n        \"translations\": []\n      },\n      \"translations\": [\n        { \"language\": \"Hindi\", \"title\": \"दिवाली बिज़नेस लेयर\" }\n      ]\n    }\n  ],\n  \"last_page\": 1,\n  \"per_page\": 12,\n  \"total\": 1\n}" }]
+				},
+				{
+					"name": "Create Frame Layer",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/frame-layers",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "title", "value": "Diwali Business Layer", "type": "text" },
+								{ "key": "slug", "value": "diwali-business-layer", "type": "text" },
+								{ "key": "frame_id", "value": "1", "type": "text" },
+								{ "key": "layer", "type": "file", "src": "/path/to/layer.png" },
+								{ "key": "is_active", "value": "1", "type": "text" },
+								{ "key": "sort_order", "value": "1", "type": "text" },
+								{ "key": "parameters", "value": "[{\"type\":\"photo\",\"label\":\"Photo Upload\",\"placeholder\":\"\",\"required\":true,\"position\":{\"x\":50,\"y\":20}},{\"type\":\"text\",\"label\":\"Business Name\",\"placeholder\":\"Enter your business\",\"required\":true,\"position\":{\"x\":50,\"y\":80}},{\"type\":\"instagram\",\"label\":\"Instagram\",\"placeholder\":\"@handle\",\"required\":false,\"position\":{\"x\":30,\"y\":92}}]", "type": "text" },
+								{ "key": "translations", "value": "[{\"language\":\"Hindi\",\"title\":\"दिवाली बिज़नेस लेयर\"},{\"language\":\"Marathi\",\"title\":\"दिवाळी बिझनेस लेयर\"}]", "type": "text" }
+							]
+						}
+					},
+					"response": [{ "name": "201 Success", "status": "Created", "code": 201, "body": "{\n  \"id\": 1,\n  \"title\": \"Diwali Business Layer\",\n  \"slug\": \"diwali-business-layer\",\n  \"frame_id\": 1,\n  \"file_path\": \"frame-layers/xyz789.png\",\n  \"parameters\": [{\"type\":\"photo\",\"label\":\"Photo Upload\"}],\n  \"frame\": { \"id\": 1, \"title\": \"Diwali Frame 1\" },\n  \"translations\": [{ \"language\": \"Hindi\", \"title\": \"दिवाली बिज़नेस लेयर\" }]\n}" }]
+				},
+				{
+					"name": "Show Frame Layer",
+					"request": { "method": "GET", "url": "{{baseUrl}}/frame-layers/1", "header": [{ "key": "Accept", "value": "application/json" }] }
+				},
+				{
+					"name": "Update Frame Layer (with file)",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/frame-layers/1",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "_method", "value": "PUT", "type": "text" },
+								{ "key": "title", "value": "Diwali Business Layer v2", "type": "text" },
+								{ "key": "layer", "type": "file", "src": "/path/to/new-layer.png" },
+								{ "key": "parameters", "value": "[{\"type\":\"photo\",\"label\":\"Profile Photo\",\"required\":true,\"position\":{\"x\":50,\"y\":20}}]", "type": "text" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Frame Layer",
+					"request": { "method": "DELETE", "url": "{{baseUrl}}/frame-layers/1", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{ \"message\": \"Frame layer deleted\" }" }]
+				},
+				{
+					"name": "Toggle Frame Layer Active",
+					"request": { "method": "PATCH", "url": "{{baseUrl}}/frame-layers/1/toggle", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"id\": 1,\n  \"title\": \"Diwali Business Layer\",\n  \"is_active\": false\n}" }]
+				}
+			]
+		},
+		{
+			"name": "Payments (Razorpay)",
+			"item": [
+				{
+					"name": "Create Payment Order",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/payment/create-order",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"subscription_id\": 1\n}" }
+					},
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"order_id\": \"order_abc123\",\n  \"amount\": 9900,\n  \"currency\": \"INR\",\n  \"key_id\": \"rzp_test_xxx\",\n  \"payment_id\": 1,\n  \"user\": { \"name\": \"John Doe\", \"email\": \"john@example.com\" },\n  \"package_name\": \"Monthly Plan\"\n}" }]
+				},
+				{
+					"name": "Verify Payment",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/payment/verify",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"razorpay_order_id\": \"order_abc123\",\n  \"razorpay_payment_id\": \"pay_xyz789\",\n  \"razorpay_signature\": \"sig_hash_value\"\n}" }
+					},
+					"response": [
+						{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"message\": \"Payment verified successfully\",\n  \"status\": \"paid\",\n  \"subscription\": {\n    \"id\": 1,\n    \"status\": \"active\",\n    \"starts_at\": \"2026-04-01\",\n    \"ends_at\": \"2026-05-01\"\n  }\n}" },
+						{ "name": "400 Failed", "status": "Bad Request", "code": 400, "body": "{\n  \"message\": \"Payment verification failed\",\n  \"status\": \"failed\"\n}" }
+					]
+				},
+				{
+					"name": "Payment Failed",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/payment/failed",
+						"header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Accept", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n  \"razorpay_order_id\": \"order_abc123\",\n  \"error_description\": \"Payment was cancelled by user\"\n}" }
+					},
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"message\": \"Payment failed\",\n  \"status\": \"failed\"\n}" }]
+				}
+			]
+		},
+		{
+			"name": "Mobile — Subscription",
+			"item": [
+				{
+					"name": "Subscription Status",
+					"request": { "method": "GET", "url": "{{baseUrl}}/mobile/subscription/status", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "{\n  \"has_premium_access\": true,\n  \"is_subscribed\": true,\n  \"subscription\": {\n    \"id\": 1,\n    \"package_name\": \"Monthly Plan\",\n    \"duration_type\": \"monthly\",\n    \"status\": \"active\",\n    \"starts_at\": \"2026-04-01\",\n    \"ends_at\": \"2026-05-01\",\n    \"is_premium\": true,\n    \"days_remaining\": 30\n  },\n  \"user\": { \"id\": 5, \"name\": \"John Doe\", \"email\": \"john@example.com\" }\n}" }]
+				},
+				{
+					"name": "Subscription History",
+					"request": { "method": "GET", "url": "{{baseUrl}}/mobile/subscription/history", "header": [{ "key": "Accept", "value": "application/json" }] },
+					"response": [{ "name": "200 Success", "status": "OK", "code": 200, "body": "[\n  {\n    \"id\": 1,\n    \"status\": \"active\",\n    \"starts_at\": \"2026-04-01\",\n    \"ends_at\": \"2026-05-01\",\n    \"package\": { \"name\": \"Monthly Plan\", \"price\": 99.00 },\n    \"payments\": [\n      { \"id\": 1, \"amount\": 9900, \"status\": \"paid\", \"razorpay_payment_id\": \"pay_xyz789\" }\n    ]\n  }\n]" }]
+				}
+			]
+		}
+	]
+}

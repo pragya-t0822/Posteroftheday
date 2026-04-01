@@ -31,4 +31,9 @@ class Frame extends Model
     {
         return $this->hasMany(FrameTranslation::class);
     }
+
+    public function layers(): HasMany
+    {
+        return $this->hasMany(FrameLayer::class);
+    }
 }

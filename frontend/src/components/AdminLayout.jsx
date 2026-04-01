@@ -13,8 +13,8 @@ const pageTitles = {
     '/users': 'User Management',
     '/roles': 'Roles & Access',
     '/permissions': 'Permissions',
-    '/posters': 'Posters',
-    '/subscriptions': 'Subscription Packages',
+    '/frame-layers': 'Frame Layers',
+    '/packages': 'Packages',
     '/settings': 'Settings',
 };
 

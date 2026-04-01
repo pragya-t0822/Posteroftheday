@@ -11,7 +11,10 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SubscriptionPackageController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\FontController;
 use App\Http\Controllers\Api\FrameController;
+use App\Http\Controllers\Api\FrameLayerController;
+use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,16 +44,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mobile/subscription/status', [MobileSubscriptionController::class , 'status']);
     Route::get('/mobile/subscription/history', [MobileSubscriptionController::class , 'history']);
 
-    // Subscription Packages (public list for all authenticated users)
-    Route::get('/subscription-packages', [SubscriptionPackageController::class , 'index']);
+    // Packages (public list for all authenticated users)
+    Route::get('/packages', [SubscriptionPackageController::class , 'index']);
 
-    // Subscription Packages Management (Super Admin + Admin)
+    // Packages Management (Super Admin + Admin)
     Route::middleware('role:super_admin,admin')->group(function () {
-            Route::post('/subscription-packages', [SubscriptionPackageController::class , 'store']);
-            Route::get('/subscription-packages/{subscriptionPackage}', [SubscriptionPackageController::class , 'show']);
-            Route::put('/subscription-packages/{subscriptionPackage}', [SubscriptionPackageController::class , 'update']);
-            Route::delete('/subscription-packages/{subscriptionPackage}', [SubscriptionPackageController::class , 'destroy']);
-            Route::patch('/subscription-packages/{subscriptionPackage}/toggle', [SubscriptionPackageController::class , 'toggleActive']);
+            Route::post('/packages', [SubscriptionPackageController::class , 'store']);
+            Route::get('/packages/{subscriptionPackage}', [SubscriptionPackageController::class , 'show']);
+            Route::put('/packages/{subscriptionPackage}', [SubscriptionPackageController::class , 'update']);
+            Route::delete('/packages/{subscriptionPackage}', [SubscriptionPackageController::class , 'destroy']);
+            Route::patch('/packages/{subscriptionPackage}/toggle', [SubscriptionPackageController::class , 'toggleActive']);
         }
         );
 
@@ -90,6 +93,29 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('role:super_admin,admin')->group(function () {
             Route::apiResource('frames', FrameController::class);
             Route::patch('/frames/{frame}/toggle', [FrameController::class, 'toggleActive']);
+        }
+        );
+
+        // Frame Layers (Super Admin + Admin)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::apiResource('frame-layers', FrameLayerController::class);
+            Route::patch('/frame-layers/{frameLayer}/toggle', [FrameLayerController::class, 'toggleActive']);
+        }
+        );
+
+        // Settings (Super Admin + Admin)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::get('/settings', [SettingsController::class, 'index']);
+            Route::post('/settings', [SettingsController::class, 'update']);
+            Route::post('/settings/clear-data', [SettingsController::class, 'clearAppData']);
+        }
+        );
+
+        // Fonts (Super Admin + Admin)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::apiResource('fonts', FontController::class);
+            Route::patch('/fonts/{font}/toggle', [FontController::class, 'toggleActive']);
+            Route::patch('/fonts/{font}/default', [FontController::class, 'setDefault']);
         }
         );
     });

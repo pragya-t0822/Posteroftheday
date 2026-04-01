@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchFrames, createFrame, updateFrame, deleteFrame, toggleFrame, clearFrameError } from '../../features/frames/frameSlice';
 import { fetchCategories, fetchCategoriesFlat } from '../../features/categories/categorySlice';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 
 const STORAGE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') + '/storage/';
 /* ──────────── flatten tree into indented options ──────────── */
@@ -487,15 +488,21 @@ export default function Frames() {
     };
 
     const handleSave = async (data) => {
-        if (data.id) await dispatch(updateFrame(data));
-        else await dispatch(createFrame(data));
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updateFrame(data)) : await dispatch(createFrame(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Upload Failed', result.payload);
         setModal(null);
         loadFrames({ page: pagination.current_page });
+        alertSuccess(isEdit ? 'Frame Updated' : 'Frame Uploaded');
     };
 
     const handleDelete = async (id) => {
+        const confirmed = await alertConfirmDelete('this frame');
+        if (!confirmed) return;
         const result = await dispatch(deleteFrame(id));
-        if (!result.error) loadFrames({ page: pagination.current_page });
+        if (result.error) return alertError('Delete Failed', result.payload);
+        loadFrames({ page: pagination.current_page });
+        alertSuccess('Frame Deleted');
     };
 
     const handleDownload = (frame) => {
@@ -646,7 +653,7 @@ export default function Frames() {
                                         </td>
                                         {/* Actions */}
                                         <td className="px-5 py-3.5">
-                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-1 transition-opacity">
                                                 {/* View */}
                                                 <button onClick={() => setPreviewTarget(frame)} title="View"
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">

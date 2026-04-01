@@ -3,7 +3,7 @@ import axios from '../../api/axios';
 
 export const fetchPackages = createAsyncThunk('subscriptions/fetch', async (_, { rejectWithValue }) => {
     try {
-        const response = await axios.get('/subscription-packages');
+        const response = await axios.get('/packages');
         return response.data;
     } catch (error) {
         return rejectWithValue('Failed to load packages');
@@ -12,7 +12,7 @@ export const fetchPackages = createAsyncThunk('subscriptions/fetch', async (_, {
 
 export const createPackage = createAsyncThunk('subscriptions/create', async (data, { rejectWithValue }) => {
     try {
-        const response = await axios.post('/subscription-packages', data);
+        const response = await axios.post('/packages', data);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || 'Failed to create package');
@@ -21,7 +21,7 @@ export const createPackage = createAsyncThunk('subscriptions/create', async (dat
 
 export const updatePackage = createAsyncThunk('subscriptions/update', async ({ id, ...data }, { rejectWithValue }) => {
     try {
-        const response = await axios.put(`/subscription-packages/${id}`, data);
+        const response = await axios.put(`/packages/${id}`, data);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || 'Failed to update package');
@@ -30,7 +30,7 @@ export const updatePackage = createAsyncThunk('subscriptions/update', async ({ i
 
 export const deletePackage = createAsyncThunk('subscriptions/delete', async (id, { rejectWithValue }) => {
     try {
-        await axios.delete(`/subscription-packages/${id}`);
+        await axios.delete(`/packages/${id}`);
         return id;
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || 'Failed to delete package');
@@ -39,7 +39,7 @@ export const deletePackage = createAsyncThunk('subscriptions/delete', async (id,
 
 export const togglePackage = createAsyncThunk('subscriptions/toggle', async (id, { rejectWithValue }) => {
     try {
-        const response = await axios.patch(`/subscription-packages/${id}/toggle`);
+        const response = await axios.patch(`/packages/${id}/toggle`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || 'Failed to toggle package');

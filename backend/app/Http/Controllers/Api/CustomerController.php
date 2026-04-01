@@ -60,7 +60,14 @@ class CustomerController extends Controller
     public function show(string $id)
     {
         $customer = User::findOrFail($id);
-        return response()->json($customer->load('role'));
+        $customer->load([
+            'role',
+            'subscriptions' => fn($q) => $q->orderByDesc('created_at'),
+            'subscriptions.package',
+            'subscriptions.payments',
+        ]);
+
+        return response()->json($customer);
     }
 
     public function update(Request $request, string $id)

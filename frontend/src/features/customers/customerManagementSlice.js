@@ -28,6 +28,15 @@ export const updateCustomer = createAsyncThunk('customerManagement/update', asyn
     }
 });
 
+export const fetchCustomerDetail = createAsyncThunk('customerManagement/fetchDetail', async (id, { rejectWithValue }) => {
+    try {
+        const response = await axios.get(`/customers/${id}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue('Failed to load customer details');
+    }
+});
+
 export const deleteCustomer = createAsyncThunk('customerManagement/delete', async (id, { rejectWithValue }) => {
     try {
         await axios.delete(`/customers/${id}`);
@@ -41,6 +50,8 @@ const customerManagementSlice = createSlice({
     name: 'customerManagement',
     initialState: {
         items: [],
+        detail: null,
+        detailLoading: false,
         loading: false,
         error: null,
         pagination: {
@@ -52,9 +63,13 @@ const customerManagementSlice = createSlice({
     },
     reducers: {
         clearCustomerManagementError: (state) => { state.error = null; },
+        clearCustomerDetail: (state) => { state.detail = null; },
     },
     extraReducers: (builder) => {
         builder
+            .addCase(fetchCustomerDetail.pending, (state) => { state.detailLoading = true; state.error = null; })
+            .addCase(fetchCustomerDetail.fulfilled, (state, action) => { state.detailLoading = false; state.detail = action.payload; })
+            .addCase(fetchCustomerDetail.rejected, (state, action) => { state.detailLoading = false; state.error = action.payload; })
             .addCase(fetchCustomers.pending, (state) => { state.loading = true; })
             .addCase(fetchCustomers.fulfilled, (state, action) => {
                 state.loading = false;
@@ -76,5 +91,5 @@ const customerManagementSlice = createSlice({
     },
 });
 
-export const { clearCustomerManagementError } = customerManagementSlice.actions;
+export const { clearCustomerManagementError, clearCustomerDetail } = customerManagementSlice.actions;
 export default customerManagementSlice.reducer;

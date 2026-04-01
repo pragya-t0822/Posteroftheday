@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchRoles, createRole, updateRole, deleteRole, assignPermissions } from '../../features/roles/roleSlice';
 import { fetchPermissions } from '../../features/permissions/permissionSlice';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 
 const roleIcons = {
     super_admin: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
@@ -202,20 +203,29 @@ export default function Roles() {
     }, [dispatch]);
 
     const handleSave = async (data) => {
-        if (data.id) await dispatch(updateRole(data));
-        else await dispatch(createRole(data));
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updateRole(data)) : await dispatch(createRole(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Create Failed', result.payload);
         setModal(null);
         dispatch(fetchRoles());
+        alertSuccess(isEdit ? 'Role Updated' : 'Role Created');
     };
 
     const handleDelete = async (id) => {
-        await dispatch(deleteRole(id));
+        const confirmed = await alertConfirmDelete('this role');
+        if (!confirmed) return;
+        const result = await dispatch(deleteRole(id));
+        if (result.error) return alertError('Delete Failed', result.payload);
+        dispatch(fetchRoles());
+        alertSuccess('Role Deleted');
     };
 
     const handlePermSave = async (permissionIds) => {
-        await dispatch(assignPermissions({ roleId: permModal.id, permissions: permissionIds }));
+        const result = await dispatch(assignPermissions({ roleId: permModal.id, permissions: permissionIds }));
+        if (result.error) return alertError('Update Failed', result.payload);
         setPermModal(null);
         dispatch(fetchRoles());
+        alertSuccess('Permissions Updated');
     };
 
     return (

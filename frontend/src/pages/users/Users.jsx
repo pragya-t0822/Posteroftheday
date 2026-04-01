@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../../features/users/userSlice';
 import { fetchRoles } from '../../features/roles/roleSlice';
+import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
 
 const roleColors = {
     super_admin: 'bg-rose-50 text-rose-600 ring-rose-500/10',
@@ -164,17 +165,21 @@ export default function Users() {
     }, [dispatch]);
 
     const handleSave = async (data) => {
-        if (data.id) {
-            await dispatch(updateUser(data));
-        } else {
-            await dispatch(createUser(data));
-        }
+        const isEdit = !!data.id;
+        const result = isEdit ? await dispatch(updateUser(data)) : await dispatch(createUser(data));
+        if (result.error) return alertError(isEdit ? 'Update Failed' : 'Create Failed', result.payload);
         setModal(null);
         dispatch(fetchUsers());
+        alertSuccess(isEdit ? 'User Updated' : 'User Created');
     };
 
     const handleDelete = async (id) => {
-        await dispatch(deleteUser(id));
+        const confirmed = await alertConfirmDelete('this user');
+        if (!confirmed) return;
+        const result = await dispatch(deleteUser(id));
+        if (result.error) return alertError('Delete Failed', result.payload);
+        dispatch(fetchUsers());
+        alertSuccess('User Deleted');
     };
 
     const filtered = users.filter(u => {
@@ -333,7 +338,7 @@ export default function Users() {
                                     </td>
                                     {/* Actions */}
                                     <td className="px-6 py-3.5 text-right">
-                                        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="inline-flex items-center gap-1 transition-opacity">
                                             <button
                                                 onClick={() => setModal(u)}
                                                 className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
