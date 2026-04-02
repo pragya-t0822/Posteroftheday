@@ -46,6 +46,33 @@ export const deleteCustomer = createAsyncThunk('customerManagement/delete', asyn
     }
 });
 
+export const fetchCustomerReferrals = createAsyncThunk('customerManagement/fetchReferrals', async ({ id, ...params }, { rejectWithValue }) => {
+    try {
+        const response = await axios.get(`/customers/${id}/referrals`, { params });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue('Failed to load referrals');
+    }
+});
+
+export const updateReferralStatus = createAsyncThunk('customerManagement/updateReferralStatus', async ({ customerId, referralId, status }, { rejectWithValue }) => {
+    try {
+        const response = await axios.patch(`/customers/${customerId}/referrals/${referralId}/status`, { status });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to update referral status');
+    }
+});
+
+export const fetchCustomerFrameRequests = createAsyncThunk('customerManagement/fetchFrameRequests', async ({ id, ...params }, { rejectWithValue }) => {
+    try {
+        const response = await axios.get(`/customers/${id}/frame-requests`, { params });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue('Failed to load frame requests');
+    }
+});
+
 const customerManagementSlice = createSlice({
     name: 'customerManagement',
     initialState: {
@@ -54,6 +81,12 @@ const customerManagementSlice = createSlice({
         detailLoading: false,
         loading: false,
         error: null,
+        referrals: [],
+        referralsLoading: false,
+        referralsPagination: { current_page: 1, last_page: 1, per_page: 10, total: 0 },
+        frameRequests: [],
+        frameRequestsLoading: false,
+        frameRequestsPagination: { current_page: 1, last_page: 1, per_page: 10, total: 0 },
         pagination: {
             current_page: 1,
             last_page: 1,
@@ -64,6 +97,8 @@ const customerManagementSlice = createSlice({
     reducers: {
         clearCustomerManagementError: (state) => { state.error = null; },
         clearCustomerDetail: (state) => { state.detail = null; },
+        clearCustomerReferrals: (state) => { state.referrals = []; state.referralsPagination = { current_page: 1, last_page: 1, per_page: 10, total: 0 }; },
+        clearCustomerFrameRequests: (state) => { state.frameRequests = []; state.frameRequestsPagination = { current_page: 1, last_page: 1, per_page: 10, total: 0 }; },
     },
     extraReducers: (builder) => {
         builder
@@ -87,9 +122,35 @@ const customerManagementSlice = createSlice({
             .addCase(updateCustomer.fulfilled, (state) => { state.error = null; })
             .addCase(updateCustomer.rejected, (state, action) => { state.error = action.payload; })
             .addCase(deleteCustomer.fulfilled, (state) => { state.error = null; })
-            .addCase(deleteCustomer.rejected, (state, action) => { state.error = action.payload; });
+            .addCase(deleteCustomer.rejected, (state, action) => { state.error = action.payload; })
+            .addCase(fetchCustomerReferrals.pending, (state) => { state.referralsLoading = true; })
+            .addCase(fetchCustomerReferrals.fulfilled, (state, action) => {
+                state.referralsLoading = false;
+                state.referrals = action.payload.data;
+                state.referralsPagination = {
+                    current_page: action.payload.current_page,
+                    last_page: action.payload.last_page,
+                    per_page: action.payload.per_page,
+                    total: action.payload.total,
+                };
+            })
+            .addCase(fetchCustomerReferrals.rejected, (state, action) => { state.referralsLoading = false; state.error = action.payload; })
+            .addCase(updateReferralStatus.fulfilled, (state) => { state.error = null; })
+            .addCase(updateReferralStatus.rejected, (state, action) => { state.error = action.payload; })
+            .addCase(fetchCustomerFrameRequests.pending, (state) => { state.frameRequestsLoading = true; })
+            .addCase(fetchCustomerFrameRequests.fulfilled, (state, action) => {
+                state.frameRequestsLoading = false;
+                state.frameRequests = action.payload.data;
+                state.frameRequestsPagination = {
+                    current_page: action.payload.current_page,
+                    last_page: action.payload.last_page,
+                    per_page: action.payload.per_page,
+                    total: action.payload.total,
+                };
+            })
+            .addCase(fetchCustomerFrameRequests.rejected, (state, action) => { state.frameRequestsLoading = false; state.error = action.payload; });
     },
 });
 
-export const { clearCustomerManagementError, clearCustomerDetail } = customerManagementSlice.actions;
+export const { clearCustomerManagementError, clearCustomerDetail, clearCustomerReferrals, clearCustomerFrameRequests } = customerManagementSlice.actions;
 export default customerManagementSlice.reducer;

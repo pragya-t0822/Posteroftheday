@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Referral;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -67,6 +69,13 @@ class CustomerController extends Controller
             'subscriptions.payments',
         ]);
 
+        // Append referral stats
+        $customer->referral_stats = [
+            'total_referrals' => Referral::where('referrer_id', $customer->id)->count(),
+            'successful_referrals' => Referral::where('referrer_id', $customer->id)->where('status', 'successful')->count(),
+            'total_rewards_earned' => Referral::where('referrer_id', $customer->id)->where('status', 'successful')->sum('reward_earned'),
+        ];
+
         return response()->json($customer);
     }
 
@@ -99,5 +108,69 @@ class CustomerController extends Controller
         $customer->delete();
 
         return response()->json(['message' => 'Customer deleted']);
+    }
+
+    public function referrals(Request $request, string $id)
+    {
+        $customer = User::findOrFail($id);
+
+        $query = Referral::with(['referred'])->where('referrer_id', $customer->id);
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('referral_code', 'like', "%{$search}%")
+                  ->orWhereHas('referred', function ($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $referrals = $query->orderByDesc('created_at')
+            ->paginate($request->input('per_page', 10));
+
+        return response()->json($referrals);
+    }
+
+    public function updateReferralStatus(Request $request, string $customerId, string $referralId)
+    {
+        $customer = User::findOrFail($customerId);
+        $referral = Referral::where('referrer_id', $customer->id)->findOrFail($referralId);
+
+        $request->validate([
+            'status' => 'required|in:pending,successful,expired',
+        ]);
+
+        $newStatus = $request->input('status');
+
+        // If changing to successful and wasn't already successful
+        if ($newStatus === 'successful' && $referral->status !== 'successful') {
+            $rewardAmount = (float) Setting::getValue('referral_reward_amount', 0);
+            $referral->update([
+                'status' => $newStatus,
+                'reward_earned' => $rewardAmount,
+            ]);
+
+            // Credit the referrer's wallet
+            $customer->increment('wallet_balance', $rewardAmount);
+        } else {
+            // If changing FROM successful to something else, reverse the credit
+            if ($referral->status === 'successful' && $newStatus !== 'successful') {
+                $deductAmount = min($referral->reward_earned, $customer->wallet_balance);
+                $customer->decrement('wallet_balance', $deductAmount);
+                $referral->update([
+                    'status' => $newStatus,
+                    'reward_earned' => 0,
+                ]);
+            } else {
+                $referral->update(['status' => $newStatus]);
+            }
+        }
+
+        return response()->json($referral->load('referred'));
     }
 }

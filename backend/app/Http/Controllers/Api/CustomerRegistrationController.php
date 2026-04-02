@@ -20,6 +20,7 @@ class CustomerRegistrationController extends Controller
             'phone' => 'nullable|string|max:20',
             'password' => 'required|string|min:8|confirmed',
             'package_id' => 'required|exists:subscription_packages,id',
+            'referral_code' => 'nullable|string|exists:users,referral_code',
         ]);
 
         $customerRole = Role::where('slug', 'customer')->first();
@@ -30,6 +31,26 @@ class CustomerRegistrationController extends Controller
             'password' => Hash::make($request->password),
             'role_id' => $customerRole?->id,
         ]);
+
+        // Generate unique referral code for this customer
+        do {
+            $code = strtoupper(\Illuminate\Support\Str::random(8));
+        } while (User::where('referral_code', $code)->exists());
+        $user->update(['referral_code' => $code]);
+
+        // If referred by someone, create referral record
+        if ($request->filled('referral_code')) {
+            $referrer = User::where('referral_code', $request->referral_code)->first();
+            if ($referrer) {
+                $user->update(['referred_by' => $referrer->id]);
+                \App\Models\Referral::create([
+                    'referrer_id' => $referrer->id,
+                    'referred_id' => $user->id,
+                    'referral_code' => $request->referral_code,
+                    'status' => 'pending',
+                ]);
+            }
+        }
 
         $package = SubscriptionPackage::findOrFail($request->package_id);
 

@@ -26,6 +26,9 @@ class User extends Authenticatable
         'email',
         'phone',
         'status',
+        'referral_code',
+        'referred_by',
+        'wallet_balance',
         'password',
         'role_id',
     ];
@@ -50,6 +53,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'wallet_balance' => 'decimal:2',
         ];
     }
 
@@ -61,6 +65,16 @@ class User extends Authenticatable
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by');
     }
 
     public function hasPermission(string $slug): bool

@@ -12,6 +12,9 @@ import Customers from './pages/customers/Customers';
 import CustomerDetails from './pages/customers/CustomerDetails';
 import Categories from './pages/categories/Categories';
 import Frames from './pages/frames/Frames';
+import FrameRequests from './pages/frameRequests/FrameRequests';
+import Reminders from './pages/reminders/Reminders';
+import ReminderForm from './pages/reminders/ReminderForm';
 import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import CustomerRegister from './pages/customer/CustomerRegister';
@@ -50,6 +53,10 @@ export default function App() {
                     <Route path="/categories" element={<ProtectedRoute permission="categories.view"><Categories /></ProtectedRoute>} />
                     <Route path="/frames" element={<ProtectedRoute permission="frames.view"><Frames /></ProtectedRoute>} />
                     <Route path="/settings" element={<ProtectedRoute permission="settings.view"><Settings /></ProtectedRoute>} />
+                    <Route path="/frame-requests" element={<ProtectedRoute permission="frame-requests.view"><FrameRequests /></ProtectedRoute>} />
+                    <Route path="/reminders" element={<ProtectedRoute permission="reminders.view"><Reminders /></ProtectedRoute>} />
+                    <Route path="/reminders/create" element={<ProtectedRoute permission="reminders.view"><ReminderForm /></ProtectedRoute>} />
+                    <Route path="/reminders/:id/edit" element={<ProtectedRoute permission="reminders.view"><ReminderForm /></ProtectedRoute>} />
                 </Route>
 
                 {/* Fallback */}

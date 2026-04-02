@@ -10,6 +10,7 @@ const TABS = [
     { key: 'free_poster', label: 'Free Poster Generation', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg> },
     { key: 'clear_data', label: 'Clear App Data', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg> },
     { key: 'fonts', label: 'Fonts', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M12 17.25h8.25" /></svg> },
+    { key: 'referral', label: 'Referral Program', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H4.5a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg> },
 ];
 
 /* ══════════════════════════════════════
@@ -419,6 +420,72 @@ function FontsTab({ fonts, loading, dispatch }) {
 }
 
 /* ══════════════════════════════════════
+   Tab 4 — Referral Program
+   ══════════════════════════════════════ */
+function ReferralTab({ settings, onSave, saving }) {
+    const [rewardAmount, setRewardAmount] = useState(settings.referral_reward_amount || '0');
+
+    useEffect(() => {
+        setRewardAmount(settings.referral_reward_amount || '0');
+    }, [settings]);
+
+    const handleSave = () => {
+        onSave([
+            { key: 'referral_reward_amount', value: rewardAmount, group: 'referral' },
+        ]);
+    };
+
+    const inputCls = 'px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 transition-all';
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Referral Reward Configuration</h3>
+                    <p className="text-xs text-gray-400 mt-1">Set the reward amount credited to a customer's wallet when their referral is successful</p>
+                </div>
+
+                <div className="max-w-sm">
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Reward Per Successful Referral (&#8377;)</label>
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={rewardAmount}
+                        onChange={e => setRewardAmount(e.target.value)}
+                        className={`w-full ${inputCls}`}
+                        placeholder="0.00"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1.5">This amount will be automatically credited to the referrer's wallet when their referred user completes a successful action</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                    <div className="flex items-start gap-3">
+                        <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                        <div>
+                            <p className="text-sm font-medium text-amber-800">How it works</p>
+                            <ul className="text-xs text-amber-700 mt-1 space-y-1">
+                                <li>Each customer gets a unique referral code at registration</li>
+                                <li>When a new user signs up using a referral code, a pending referral is created</li>
+                                <li>When the referral is marked as successful, the reward amount is credited to the referrer's wallet</li>
+                                <li>Changing this value only affects future referrals — existing rewards are not recalculated</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-end">
+                <button onClick={handleSave} disabled={saving}
+                    className="px-6 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all disabled:opacity-50">
+                    {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/* ══════════════════════════════════════
    Main Settings Page
    ══════════════════════════════════════ */
 export default function Settings() {
@@ -478,6 +545,7 @@ export default function Settings() {
                             {activeTab === 'free_poster' && <FreePosterTab settings={settings} onSave={handleSaveSettings} saving={saving} />}
                             {activeTab === 'clear_data' && <ClearDataTab settings={settings} onSave={handleSaveSettings} saving={saving} onClear={handleClearData} clearResult={clearResult} />}
                             {activeTab === 'fonts' && <FontsTab fonts={fonts} loading={fontsLoading} dispatch={dispatch} />}
+                            {activeTab === 'referral' && <ReferralTab settings={settings} onSave={handleSaveSettings} saving={saving} />}
                         </>
                     )}
                 </div>

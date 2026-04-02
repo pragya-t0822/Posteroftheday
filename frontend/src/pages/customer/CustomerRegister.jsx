@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPublicPackages, registerCustomer, setSelectedPackage, clearCustomerError } from '../../features/customer/customerSlice';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import Logo from '../../components/Logo';
 import Footer from '../../components/Footer';
 
@@ -22,6 +22,8 @@ export default function CustomerRegister() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { packages, selectedPackage, loading, error } = useSelector((state) => state.customer);
+    const [searchParams] = useSearchParams();
+    const refCode = searchParams.get('ref');
     const [step, setStep] = useState(1);
     const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password_confirmation: '' });
 
@@ -35,7 +37,7 @@ export default function CustomerRegister() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         dispatch(clearCustomerError());
-        const result = await dispatch(registerCustomer({ ...form, package_id: selectedPackage.id }));
+        const result = await dispatch(registerCustomer({ ...form, package_id: selectedPackage.id, ...(refCode && { referral_code: refCode }) }));
         if (registerCustomer.fulfilled.match(result)) {
             if (result.payload.requires_payment) {
                 navigate('/payment/checkout', { state: { subscription: result.payload.subscription } });

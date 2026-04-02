@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FontController;
 use App\Http\Controllers\Api\FrameController;
 use App\Http\Controllers\Api\FrameLayerController;
+use App\Http\Controllers\Api\FrameRequestController;
+use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +45,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Mobile App - Subscription Status
     Route::get('/mobile/subscription/status', [MobileSubscriptionController::class , 'status']);
     Route::get('/mobile/subscription/history', [MobileSubscriptionController::class , 'history']);
+
+    // Mobile: Today's priority content
+    Route::get('/mobile/reminders/today', [ReminderController::class, 'todayPriority']);
+
+    // Customer Frame Requests (for mobile app / customer)
+    Route::get('/my/frame-requests', [FrameRequestController::class, 'customerIndex']);
+    Route::post('/my/frame-requests', [FrameRequestController::class, 'customerStore']);
+    Route::get('/my/custom-frames', [FrameRequestController::class, 'customerCustomFrames']);
 
     // Packages (public list for all authenticated users)
     Route::get('/packages', [SubscriptionPackageController::class , 'index']);
@@ -79,6 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Customers (Super Admin + Admin)
         Route::middleware('role:super_admin,admin')->group(function () {
             Route::apiResource('customers', CustomerController::class);
+            Route::get('/customers/{customer}/referrals', [CustomerController::class, 'referrals']);
+            Route::patch('/customers/{customer}/referrals/{referral}/status', [CustomerController::class, 'updateReferralStatus']);
         }
         );
 
@@ -118,4 +130,17 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch('/fonts/{font}/default', [FontController::class, 'setDefault']);
         }
         );
+
+        // Frame Requests (Super Admin + Admin)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::apiResource('frame-requests', FrameRequestController::class)->except(['store']);
+            Route::get('/customers/{customer}/frame-requests', [FrameRequestController::class, 'customerRequests']);
+        }
+        );
+
+        // Reminders (Super Admin + Admin)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::apiResource('reminders', ReminderController::class);
+            Route::patch('/reminders/{reminder}/toggle', [ReminderController::class, 'toggleActive']);
+        });
     });

@@ -12,6 +12,8 @@ import frameReducer from '../features/frames/frameSlice';
 import frameLayerReducer from '../features/frameLayers/frameLayerSlice';
 import settingsReducer from '../features/settings/settingsSlice';
 import fontReducer from '../features/fonts/fontSlice';
+import frameRequestReducer from '../features/frameRequests/frameRequestSlice';
+import reminderReducer from '../features/reminders/reminderSlice';
 
 export const store = configureStore({
     reducer: {
@@ -28,5 +30,7 @@ export const store = configureStore({
         frameLayers: frameLayerReducer,
         settings: settingsReducer,
         fonts: fontReducer,
+        frameRequests: frameRequestReducer,
+        reminders: reminderReducer,
     },
 });

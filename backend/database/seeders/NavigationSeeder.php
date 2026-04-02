@@ -48,18 +48,32 @@ class NavigationSeeder extends Seeder
                 'sort_order' => 5,
             ],
             [
+                'title' => 'Frame Layer Requests',
+                'icon' => 'Inbox',
+                'route' => '/frame-requests',
+                'permission_slug' => 'frame-requests.view',
+                'sort_order' => 6,
+            ],
+            [
+                'title' => 'Reminders',
+                'icon' => 'Bell',
+                'route' => '/reminders',
+                'permission_slug' => 'reminders.view',
+                'sort_order' => 7,
+            ],
+            [
                 'title' => 'User Management',
                 'icon' => 'Users',
                 'route' => '/users',
                 'permission_slug' => 'users.view',
-                'sort_order' => 6,
+                'sort_order' => 8,
             ],
             [
                 'title' => 'Roles & Access',
                 'icon' => 'Shield',
                 'route' => null,
                 'permission_slug' => 'roles.view',
-                'sort_order' => 7,
+                'sort_order' => 9,
                 'children' => [
                     [
                         'title' => 'Roles',
@@ -82,14 +96,14 @@ class NavigationSeeder extends Seeder
                 'icon' => 'CreditCard',
                 'route' => '/packages',
                 'permission_slug' => 'subscriptions.view',
-                'sort_order' => 8,
+                'sort_order' => 10,
             ],
             [
                 'title' => 'Settings',
                 'icon' => 'Settings',
                 'route' => '/settings',
                 'permission_slug' => 'settings.view',
-                'sort_order' => 9,
+                'sort_order' => 11,
             ],
         ];
 
