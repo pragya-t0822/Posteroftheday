@@ -41,11 +41,57 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::with('role')->where('email', $request->email)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        if ($user->role && $user->role->slug === 'customer') {
+            throw ValidationException::withMessages([
+                'email' => ['Please use the customer login page.'],
+            ]);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+        $user->load('role.permissions');
+
+        return response()->json([
+            'user'        => $user,
+            'token'       => $token,
+            'permissions' => $user->role ? $user->role->permissions->pluck('slug') : [],
+        ]);
+    }
+
+    public function customerLogin(Request $request)
+    {
+        $request->validate([
+            'login'    => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::with('role')->where(function ($q) use ($request) {
+            $q->where('email', $request->login)
+              ->orWhere('phone', $request->login);
+        })->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'login' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        if (! $user->role || $user->role->slug !== 'customer') {
+            throw ValidationException::withMessages([
+                'login' => ['This login is for customers only.'],
+            ]);
+        }
+
+        if ($user->status !== 'active') {
+            throw ValidationException::withMessages([
+                'login' => ['Your account is inactive. Please contact support.'],
             ]);
         }
 

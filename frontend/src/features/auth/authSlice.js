@@ -35,6 +35,23 @@ export const registerUser = createAsyncThunk(
     }
 );
 
+export const customerLogin = createAsyncThunk(
+    'auth/customerLogin',
+    async (credentials, { rejectWithValue }) => {
+        try {
+            const response = await axios.post('/customer/login', credentials);
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            localStorage.setItem('permissions', JSON.stringify(response.data.permissions));
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message || error.response?.data?.errors?.login?.[0] || 'Login failed'
+            );
+        }
+    }
+);
+
 export const fetchUser = createAsyncThunk(
     'auth/fetchUser',
     async (_, { rejectWithValue }) => {
@@ -119,6 +136,20 @@ const authSlice = createSlice({
                 state.user = null;
                 state.token = null;
                 state.permissions = [];
+            })
+            .addCase(customerLogin.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(customerLogin.fulfilled, (state, action) => {
+                state.loading = false;
+                state.user = action.payload.user;
+                state.token = action.payload.token;
+                state.permissions = action.payload.permissions;
+            })
+            .addCase(customerLogin.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             })
             .addCase(logoutUser.fulfilled, (state) => {
                 state.user = null;

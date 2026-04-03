@@ -125,9 +125,9 @@ export default function Login() {
 
                 {/* Footer link */}
                 <p className="text-center text-xs text-gray-400">
-                    New customer?{' '}
-                    <Link to="/get-started" className="text-rose-500 hover:text-rose-600 font-medium transition-colors">
-                        Get started with a plan
+                    Customer?{' '}
+                    <Link to="/customer/login" className="text-rose-500 hover:text-rose-600 font-medium transition-colors">
+                        Go to Customer Login
                     </Link>
                 </p>
 

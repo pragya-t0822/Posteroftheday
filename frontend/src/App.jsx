@@ -17,6 +17,10 @@ import Reminders from './pages/reminders/Reminders';
 import ReminderForm from './pages/reminders/ReminderForm';
 import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import CustomerProtectedRoute from './components/CustomerProtectedRoute';
+import CustomerLayout from './components/CustomerLayout';
+import CustomerLogin from './pages/customer/CustomerLogin';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerRegister from './pages/customer/CustomerRegister';
 import PaymentCheckout from './pages/customer/PaymentCheckout';
 import PaymentSuccess from './pages/customer/PaymentSuccess';
@@ -57,6 +61,20 @@ export default function App() {
                     <Route path="/reminders" element={<ProtectedRoute permission="reminders.view"><Reminders /></ProtectedRoute>} />
                     <Route path="/reminders/create" element={<ProtectedRoute permission="reminders.view"><ReminderForm /></ProtectedRoute>} />
                     <Route path="/reminders/:id/edit" element={<ProtectedRoute permission="reminders.view"><ReminderForm /></ProtectedRoute>} />
+                </Route>
+
+                {/* Customer Login (public) */}
+                <Route path="/customer/login" element={<CustomerLogin />} />
+
+                {/* Protected — Customer Layout */}
+                <Route
+                    element={
+                        <CustomerProtectedRoute>
+                            <CustomerLayout />
+                        </CustomerProtectedRoute>
+                    }
+                >
+                    <Route path="/customer/dashboard" element={<CustomerDashboard />} />
                 </Route>
 
                 {/* Fallback */}

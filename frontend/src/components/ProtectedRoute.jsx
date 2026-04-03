@@ -2,10 +2,15 @@ import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 
 export default function ProtectedRoute({ children, permission }) {
-    const { token, permissions } = useSelector((state) => state.auth);
+    const { token, permissions, user } = useSelector((state) => state.auth);
 
     if (!token) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Block customers from admin panel
+    if (user?.role?.slug === 'customer') {
+        return <Navigate to="/customer/dashboard" replace />;
     }
 
     if (permission && !permissions.includes(permission)) {

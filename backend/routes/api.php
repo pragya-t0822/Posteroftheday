@@ -27,6 +27,7 @@ Route::post('/login', [AuthController::class , 'login']);
 // Customer self-registration
 Route::post('/customer/register', [CustomerRegistrationController::class , 'register']);
 Route::get('/customer/packages', [CustomerRegistrationController::class , 'packages']);
+Route::post('/customer/login', [AuthController::class, 'customerLogin']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

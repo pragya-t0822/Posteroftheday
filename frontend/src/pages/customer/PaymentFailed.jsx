@@ -19,7 +19,7 @@ export default function PaymentFailed() {
                     <Link to="/get-started" className="flex-1 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold text-center hover:bg-gray-800 transition-colors">
                         Try Again
                     </Link>
-                    <Link to="/login" className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-center text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link to="/customer/login" className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-center text-gray-700 hover:bg-gray-50 transition-colors">
                         Go to Login
                     </Link>
                 </div>

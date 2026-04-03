@@ -59,7 +59,7 @@ export default function CustomerRegister() {
                         <Logo size={34} />
                         <span className="text-base font-bold text-gray-900">Poster of the Day</span>
                     </Link>
-                    <Link to="/login" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5">
+                    <Link to="/customer/login" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5">
                         <span>Already have an account?</span>
                         <span className="text-rose-500 hover:text-rose-600">Sign in</span>
                     </Link>
