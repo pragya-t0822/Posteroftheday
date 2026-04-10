@@ -234,8 +234,7 @@ export default function CustomerDetails() {
     };
 
     const handleDelete = async () => {
-        const confirmed = await alertConfirmDelete(customer.name);
-        if (!confirmed) return;
+        setShowDelete(false);
         const result = await dispatch(deleteCustomer(customer.id));
         if (result.error) return alertError('Delete Failed', result.payload);
         alertSuccess('Customer Deleted');

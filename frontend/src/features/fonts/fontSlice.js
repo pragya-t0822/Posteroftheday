@@ -60,6 +60,30 @@ export const setDefaultFont = createAsyncThunk('fonts/setDefault', async (id, { 
     }
 });
 
+export const bulkActivateFonts = createAsyncThunk('fonts/bulkActivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/fonts/bulk-activate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeactivateFonts = createAsyncThunk('fonts/bulkDeactivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/fonts/bulk-deactivate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeleteFonts = createAsyncThunk('fonts/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/fonts/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportFonts = createAsyncThunk('fonts/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/fonts/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fonts.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const fontSlice = createSlice({
     name: 'fonts',
     initialState: { items: [], loading: false, error: null },

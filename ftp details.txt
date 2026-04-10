@@ -1,0 +1,18 @@
+--------------
+Backend Domain : https://api.pod.allinonebimaposter.com/
+Host: 103.235.105.182
+Port: 22 or 21
+Login: api@allinonebimaposter.com
+Password: 5zpLKDbwmtHJRgB78mu8
+Path: /home/allinone/domains/api.pod.allinonebimaposter.com/public_html
+
+-------------
+Frontend Domain : https://admin.pod.allinonebimaposter.com/
+Host: 103.235.105.182
+Port: 22 or 21
+Login: admin@allinonebimaposter.com
+Password: TvsUfQfELfK2Pdj5EXfh
+Path: /home/allinone/domains/admin.pod.allinonebimaposter.com/public_html
+
+above are the ftp details of frontend and backend create agent for cicd (without github) you can directly push it on server after frontend building
+

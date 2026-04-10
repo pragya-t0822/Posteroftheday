@@ -4,10 +4,80 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Frame;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    use HasAdvancedFiltering;
+
+    /**
+     * Mobile app endpoint — returns only active root categories with active children.
+     */
+    public function mobileIndex()
+    {
+        $categories = Category::whereNull('parent_id')
+            ->where('is_active', true)
+            ->with(['recursiveChildren' => function ($q) {
+                $q->where('is_active', true);
+            }, 'translations'])
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json($categories);
+    }
+
+    /**
+     * Mobile app endpoint — returns active frames for a category and its descendants.
+     */
+    public function mobileFrames(Request $request)
+    {
+        $request->validate([
+            'category_id' => 'required|exists:categories,id',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+        ]);
+
+        $categoryId = $request->input('category_id');
+        $perPage = $request->input('per_page', 20);
+
+        // Collect the selected category + all active descendant category IDs
+        $categoryIds = $this->collectDescendantIds($categoryId);
+
+        $frames = Frame::whereIn('category_id', $categoryIds)
+            ->where('is_active', true)
+            ->with('translations')
+            ->orderBy('sort_order')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        // Append full file_url to each frame
+        $frames->getCollection()->transform(function ($frame) {
+            $frame->file_url = $frame->file_path ? asset('storage/' . $frame->file_path) : null;
+            return $frame;
+        });
+
+        return response()->json($frames);
+    }
+
+    /**
+     * Recursively collect a category ID and all its active descendant IDs.
+     */
+    private function collectDescendantIds(int $categoryId): array
+    {
+        $ids = [$categoryId];
+
+        $children = Category::where('parent_id', $categoryId)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        foreach ($children as $childId) {
+            $ids = array_merge($ids, $this->collectDescendantIds($childId));
+        }
+
+        return $ids;
+    }
+
     public function index()
     {
         $categories = Category::whereNull('parent_id')

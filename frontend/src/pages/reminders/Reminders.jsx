@@ -4,89 +4,40 @@ import { useNavigate } from 'react-router-dom';
 import { fetchReminders, deleteReminder, toggleReminder } from '../../features/reminders/reminderSlice';
 import { fetchCategoriesFlat } from '../../features/categories/categorySlice';
 import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
+import AdvancedFilters from '../../components/AdvancedFilters';
+import Pagination from '../../components/Pagination';
 
-/* ──────────── Pagination ──────────── */
-function Pagination({ pagination, onPageChange }) {
-    const { current_page, last_page, total, per_page } = pagination;
-    if (last_page <= 1) return null;
-
-    const from = (current_page - 1) * per_page + 1;
-    const to = Math.min(current_page * per_page, total);
-
-    const pages = [];
-    for (let i = 1; i <= last_page; i++) {
-        if (i === 1 || i === last_page || (i >= current_page - 1 && i <= current_page + 1)) {
-            pages.push(i);
-        } else if (pages[pages.length - 1] !== '...') {
-            pages.push('...');
-        }
-    }
-
-    return (
-        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
-            <p className="text-xs text-gray-400">
-                Showing <span className="font-semibold text-gray-600">{from}</span> to <span className="font-semibold text-gray-600">{to}</span> of <span className="font-semibold text-gray-600">{total}</span> reminders
-            </p>
-            <div className="flex items-center gap-1">
-                <button
-                    onClick={() => onPageChange(current_page - 1)}
-                    disabled={current_page === 1}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Previous
-                </button>
-                {pages.map((page, idx) =>
-                    page === '...' ? (
-                        <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-xs text-gray-400">...</span>
-                    ) : (
-                        <button
-                            key={page}
-                            onClick={() => onPageChange(page)}
-                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                                page === current_page
-                                    ? 'bg-gray-900 text-white'
-                                    : 'text-gray-500 hover:bg-gray-100'
-                            }`}
-                        >
-                            {page}
-                        </button>
-                    )
-                )}
-                <button
-                    onClick={() => onPageChange(current_page + 1)}
-                    disabled={current_page === last_page}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Next
-                </button>
-            </div>
-        </div>
-    );
+/* ──────────── Helper: normalize & format date ──────────── */
+function toDateOnly(dateStr) {
+    if (!dateStr) return '';
+    return dateStr.slice(0, 10); // extract YYYY-MM-DD from any format
 }
 
-/* ──────────── Helper: format date ──────────── */
 function formatDate(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr + 'T00:00:00');
+    const iso = toDateOnly(dateStr);
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function isToday(dateStr) {
-    if (!dateStr) return false;
+    const iso = toDateOnly(dateStr);
+    if (!iso) return false;
     const today = new Date();
     const todayStr = today.getFullYear() + '-' +
         String(today.getMonth() + 1).padStart(2, '0') + '-' +
         String(today.getDate()).padStart(2, '0');
-    return dateStr === todayStr;
+    return iso === todayStr;
 }
 
 function isPast(dateStr) {
-    if (!dateStr) return false;
+    const iso = toDateOnly(dateStr);
+    if (!iso) return false;
     const today = new Date();
     const todayStr = today.getFullYear() + '-' +
         String(today.getMonth() + 1).padStart(2, '0') + '-' +
         String(today.getDate()).padStart(2, '0');
-    return dateStr < todayStr;
+    return iso < todayStr;
 }
 
 /* ──────────── Helper: Selected Items Pills ──────────── */
@@ -123,18 +74,18 @@ export default function Reminders() {
 
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    const [dateFilter, setDateFilter] = useState('');
-    const [searchTimeout, setSearchTimeout] = useState(null);
-
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const loadReminders = useCallback((params = {}) => {
         dispatch(fetchReminders({
             page: params.page || 1,
             search: params.search ?? search,
             status: params.status ?? statusFilter,
-            reminder_date: params.reminder_date ?? dateFilter,
+            date_from: params.date_from ?? dateFrom,
+            date_to: params.date_to ?? dateTo,
             per_page: 10,
         }));
-    }, [dispatch, search, statusFilter, dateFilter]);
+    }, [dispatch, search, statusFilter, dateFrom, dateTo]);
 
     useEffect(() => {
         loadReminders({ page: 1 });
@@ -143,14 +94,28 @@ export default function Reminders() {
 
     useEffect(() => {
         loadReminders({ page: 1 });
-    }, [statusFilter, dateFilter]);
+    }, [statusFilter, dateFrom, dateTo]);
 
     const handleSearchChange = (value) => {
         setSearch(value);
-        if (searchTimeout) clearTimeout(searchTimeout);
-        setSearchTimeout(setTimeout(() => {
-            loadReminders({ page: 1, search: value });
-        }, 400));
+        loadReminders({ page: 1, search: value });
+    };
+
+    const handleFilterChange = (key, value) => {
+        if (key === 'status') setStatusFilter(value);
+    };
+
+    const handleDateChange = (key, value) => {
+        if (key === 'date_from') setDateFrom(value);
+        if (key === 'date_to') setDateTo(value);
+    };
+
+    const handleReset = () => {
+        setSearch('');
+        setStatusFilter('');
+        setDateFrom('');
+        setDateTo('');
+        dispatch(fetchReminders({ page: 1, per_page: 10 }));
     };
 
     const handlePageChange = (page) => {
@@ -190,49 +155,28 @@ export default function Reminders() {
                 </button>
             </div>
 
-            {/* Search + Filter Bar */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                        </svg>
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={e => handleSearchChange(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-all"
-                            placeholder="Search by title or occasion..."
-                        />
-                    </div>
-                    <select
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none focus:bg-white focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-all"
-                    >
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
-                    <input
-                        type="date"
-                        value={dateFilter}
-                        onChange={e => setDateFilter(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none focus:bg-white focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-all"
-                    />
-                    {dateFilter && (
-                        <button
-                            onClick={() => setDateFilter('')}
-                            className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                            title="Clear date filter"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    )}
-                </div>
-            </div>
+            {/* Advanced Filters */}
+            <AdvancedFilters
+                search={search}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search by title or occasion..."
+                filters={[
+                    {
+                        key: 'status',
+                        label: 'All Status',
+                        value: statusFilter,
+                        options: [
+                            { value: 'active', label: 'Active' },
+                            { value: 'inactive', label: 'Inactive' },
+                        ],
+                    },
+                ]}
+                onFilterChange={handleFilterChange}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateChange={handleDateChange}
+                onReset={handleReset}
+            />
 
             {/* Reminders Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -250,8 +194,8 @@ export default function Reminders() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                             </svg>
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900">{search || statusFilter || dateFilter ? 'No reminders found' : 'No reminders yet'}</h3>
-                        <p className="text-xs text-gray-400 mt-1">{search || statusFilter || dateFilter ? 'Try adjusting your search or filters.' : 'Create your first reminder to get started.'}</p>
+                        <h3 className="text-sm font-semibold text-gray-900">{search || statusFilter || dateFrom || dateTo ? 'No reminders found' : 'No reminders yet'}</h3>
+                        <p className="text-xs text-gray-400 mt-1">{search || statusFilter || dateFrom || dateTo ? 'Try adjusting your search or filters.' : 'Create your first reminder to get started.'}</p>
                     </div>
                 ) : (
                     <table className="w-full">
@@ -308,11 +252,11 @@ export default function Reminders() {
                                     </td>
                                     {/* Actions */}
                                     <td className="px-6 py-3.5 text-right">
-                                        <div className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="inline-flex items-center gap-1">
                                             {/* Edit */}
                                             <button
                                                 onClick={() => navigate(`/reminders/${r.id}/edit`)}
-                                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                                                className="p-2 rounded-lg hover:bg-amber-50 text-amber-500 hover:text-amber-700 transition-colors"
                                                 title="Edit"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -322,7 +266,7 @@ export default function Reminders() {
                                             {/* Delete */}
                                             <button
                                                 onClick={() => handleDelete(r.id)}
-                                                className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                                className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors"
                                                 title="Delete"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -339,7 +283,7 @@ export default function Reminders() {
 
                 {/* Pagination */}
                 {!loading && reminders.length > 0 && (
-                    <Pagination pagination={pagination} onPageChange={handlePageChange} />
+                    <Pagination pagination={pagination} onPageChange={handlePageChange} itemLabel="reminders" />
                 )}
             </div>
 

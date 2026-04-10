@@ -46,6 +46,24 @@ export const assignPermissions = createAsyncThunk('roles/assignPermissions', asy
     }
 });
 
+export const bulkDeleteRoles = createAsyncThunk('roles/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/roles/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportRoles = createAsyncThunk('roles/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/roles/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'roles.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const roleSlice = createSlice({
     name: 'roles',
     initialState: { items: [], loading: false, error: null },

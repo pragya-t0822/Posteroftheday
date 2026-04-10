@@ -3,30 +3,39 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Frame;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class FrameController extends Controller
 {
+    use HasAdvancedFiltering;
+
     public function index(Request $request)
     {
         $query = Frame::with(['category.translations', 'translations']);
 
-        // Server-side search
-        if ($search = $request->input('search')) {
-            $query->whereAny(['title', 'slug'], 'like', "%{$search}%");
-        }
+        $this->applySearch($query, $request, ['title', 'slug']);
 
-        // Filter by category
+        // Category filter: parent categories include direct children, others exact match
         if ($categoryId = $request->input('category_id')) {
-            $query->where('category_id', $categoryId);
+            $category = Category::find($categoryId);
+            if ($category && $category->children()->exists()) {
+                // Parent category: show frames from its direct children
+                $childIds = $category->children()->pluck('id')->toArray();
+                $query->whereIn('category_id', array_merge([$categoryId], $childIds));
+            } else {
+                // Leaf category: exact match only
+                $query->where('category_id', $categoryId);
+            }
         }
 
-        // Filter by status
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
+        $this->applyFilters($query, $request, [
+            'is_active' => 'is_active',
+        ]);
+        $this->applyDateRange($query, $request);
 
         $query->orderBy('sort_order')->orderByDesc('created_at');
 
@@ -108,13 +117,37 @@ class FrameController extends Controller
 
     public function destroy(Frame $frame)
     {
-        if ($frame->file_path && Storage::disk('public')->exists($frame->file_path)) {
-            Storage::disk('public')->delete($frame->file_path);
+        try {
+            // Delete related layer files from storage
+            foreach ($frame->layers as $layer) {
+                if ($layer->file_path && Storage::disk('public')->exists($layer->file_path)) {
+                    Storage::disk('public')->delete($layer->file_path);
+                }
+                $layer->translations()->delete();
+            }
+            $frame->layers()->delete();
+            $frame->translations()->delete();
+
+            // Delete the frame file from storage
+            if ($frame->file_path && Storage::disk('public')->exists($frame->file_path)) {
+                Storage::disk('public')->delete($frame->file_path);
+            }
+
+            $frame->delete();
+
+            return response()->json(['message' => 'Frame deleted']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to delete frame: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function download(Frame $frame)
+    {
+        if (!$frame->file_path || !Storage::disk('public')->exists($frame->file_path)) {
+            return response()->json(['message' => 'File not found'], 404);
         }
 
-        $frame->delete();
-
-        return response()->json(['message' => 'Frame deleted']);
+        return Storage::disk('public')->download($frame->file_path, $frame->file_name ?: basename($frame->file_path));
     }
 
     public function toggleActive(Frame $frame)
@@ -144,4 +177,29 @@ class FrameController extends Controller
             }
         }
     }
+
+    public function bulkActivate(Request $request)
+    {
+        return $this->bulkUpdateField(Frame::class, $request, 'is_active', true);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        return $this->bulkUpdateField(Frame::class, $request, 'is_active', false);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(Frame::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(Frame::class, $request,
+            ['id', 'title', 'slug', 'is_active', 'created_at'],
+            ['ID', 'Title', 'Slug', 'Active', 'Created At'],
+            'frames.csv'
+        );
+    }
+
 }

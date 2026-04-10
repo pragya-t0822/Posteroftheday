@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node deploy/deploy.js frontend)",
+      "Bash(npm install:*)",
+      "Bash(powershell -Command 'try { $wc = New-Object System.Net.WebClient; $wc.Credentials = New-Object System.Net.NetworkCredential\\('\\\\''api@allinonebimaposter.com'\\\\'','\\\\''5zpLKDbwmtHJRgB78mu8'\\\\''\\); $wc.UploadFile\\('\\\\''ftp://103.235.105.182/config/cors.php'\\\\'', '\\\\''C:\\\\xampp\\\\htdocs\\\\posteroftheday\\\\backend\\\\config\\\\cors.php'\\\\''\\); Write-Host '\\\\''Upload successful!'\\\\'' } catch { Write-Host $_.Exception.Message }')",
+      "Bash(powershell -Command 'try { $uri = '\\\\''ftp://103.235.105.182/config/cors.php'\\\\''; $req = [System.Net.FtpWebRequest]::Create\\($uri\\); $req.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile; $req.Credentials = New-Object System.Net.NetworkCredential\\('\\\\''api@allinonebimaposter.com'\\\\'','\\\\''5zpLKDbwmtHJRgB78mu8'\\\\''\\); $req.UsePassive = $false; $req.UseBinary = $true; $req.Timeout = 30000; $fileContent = [System.IO.File]::ReadAllBytes\\('\\\\''C:\\\\xampp\\\\htdocs\\\\posteroftheday\\\\backend\\\\config\\\\cors.php'\\\\''\\); $stream = $req.GetRequestStream\\(\\); $stream.Write\\($fileContent, 0, $fileContent.Length\\); $stream.Close\\(\\); $resp = $req.GetResponse\\(\\); Write-Host \\('\\\\''Upload successful! Status: '\\\\'' + $resp.StatusDescription\\); $resp.Close\\(\\) } catch { Write-Host \\('\\\\''Error: '\\\\'' + $_.Exception.Message\\); if \\($_.Exception.InnerException\\) { Write-Host \\('\\\\''Inner: '\\\\'' + $_.Exception.InnerException.Message\\) } }')",
+      "Bash(where winscp:*)",
+      "Bash(where WinSCP.com)",
+      "Read(//c/Program Files \\(x86\\)/WinSCP/**)",
+      "Read(//c/Program Files/WinSCP/**)",
+      "Bash(where filezilla:*)",
+      "Read(//c/Program Files/FileZilla FTP Client/**)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 api@allinonebimaposter.com@103.235.105.182 \"tail -50 /home/allinone/domains/api.pod.allinonebimaposter.com/public_html/storage/logs/laravel.log\")",
+      "Bash(curl -s -u \"api@allinonebimaposter.com:5zpLKDbwmtHJRgB78mu8\" \"sftp://103.235.105.182/home/allinone/domains/api.pod.allinonebimaposter.com/public_html/storage/logs/laravel.log\")",
+      "Bash(curl -v -u \"api@allinonebimaposter.com:5zpLKDbwmtHJRgB78mu8\" \"ftp://103.235.105.182/public_html/storage/logs/laravel.log\")",
+      "Bash(curl.exe -s -X POST \"https://api.pod.allinonebimaposter.com/api/login\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"test@test.com\\\\\",\\\\\"password\\\\\":\\\\\"test123\\\\\"}\")",
+      "WebFetch(domain:api.pod.allinonebimaposter.com)",
+      "Bash(mysql -h 103.235.105.182 -u allinone_pod -p'q2L7D2VjV7qVwNZ8vA4d' allinone_pod -e \"SHOW TABLES;\")",
+      "Bash(php artisan:*)",
+      "Bash(node -e ':*)",
+      "Bash(node deploy/deploy.js backend)",
+      "Bash(rm -rf node_modules/.vite dist)",
+      "Bash(npm run:*)",
+      "Bash(curl -s ifconfig.me)",
+      "Bash(curl -s api.ipify.org)",
+      "Bash(curl -s -4 ifconfig.me)",
+      "Bash(curl -s -4 api.ipify.org)"
+    ]
+  }
+}

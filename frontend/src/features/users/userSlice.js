@@ -37,6 +37,30 @@ export const deleteUser = createAsyncThunk('users/delete', async (id, { rejectWi
     }
 });
 
+export const bulkActivateUsers = createAsyncThunk('users/bulkActivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/users/bulk-activate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeactivateUsers = createAsyncThunk('users/bulkDeactivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/users/bulk-deactivate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeleteUsers = createAsyncThunk('users/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/users/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportUsers = createAsyncThunk('users/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/users/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'users.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const userSlice = createSlice({
     name: 'users',
     initialState: { items: [], loading: false, error: null },

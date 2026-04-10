@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchRoles, createRole, updateRole, deleteRole, assignPermissions } from '../../features/roles/roleSlice';
 import { fetchPermissions } from '../../features/permissions/permissionSlice';
 import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
+import AdvancedFilters from '../../components/AdvancedFilters';
 
 const roleIcons = {
     super_admin: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
@@ -30,12 +31,26 @@ function RoleModal({ role, onClose, onSave }) {
         slug: role?.slug || '',
         description: role?.description || '',
     });
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState({});
+    const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: undefined })); };
     const inputCls = 'w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 transition-all';
 
-    const handleSubmit = (e) => {
+    const validate = () => {
+        const errs = {};
+        if (!form.name.trim()) errs.name = 'Role name is required';
+        if (!form.slug.trim()) errs.slug = 'Slug is required';
+        else if (!/^[a-z][a-z0-9_-]*$/.test(form.slug)) errs.slug = 'Slug must be lowercase with hyphens/underscores only';
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(role ? { id: role.id, ...form } : form);
+        if (!validate()) return;
+        setSaving(true);
+        await onSave(role ? { id: role.id, ...form } : form);
+        setSaving(false);
     };
 
     return (
@@ -54,11 +69,13 @@ function RoleModal({ role, onClose, onSave }) {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Role Name</label>
-                            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} placeholder="Admin" required />
+                            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} className={`${inputCls} ${errors.name ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="Admin" />
+                            {errors.name && <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Slug</label>
-                            <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={inputCls} placeholder="admin" required />
+                            <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={`${inputCls} ${errors.slug ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="admin" />
+                            {errors.slug && <p className="text-[11px] text-red-500 mt-1">{errors.slug}</p>}
                         </div>
                     </div>
                     <div>
@@ -67,7 +84,7 @@ function RoleModal({ role, onClose, onSave }) {
                     </div>
                     <div className="flex gap-3 pt-3 border-t border-gray-100">
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                        <button type="submit" className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">{role ? 'Update Role' : 'Create Role'}</button>
+                        <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all disabled:opacity-50">{saving ? 'Saving...' : role ? 'Update Role' : 'Create Role'}</button>
                     </div>
                 </form>
             </div>
@@ -79,8 +96,10 @@ function RoleModal({ role, onClose, onSave }) {
 function PermissionModal({ role, allPermissions, onClose, onSave }) {
     const currentIds = role.permissions?.map(p => p.id) || [];
     const [selected, setSelected] = useState(currentIds);
+    const [saving, setSaving] = useState(false);
 
     const grouped = allPermissions.reduce((acc, p) => {
+        if (p.module?.toLowerCase() === 'customers') return acc;
         if (!acc[p.module]) acc[p.module] = [];
         acc[p.module].push(p);
         return acc;
@@ -158,30 +177,9 @@ function PermissionModal({ role, allPermissions, onClose, onSave }) {
                 {/* Footer */}
                 <div className="flex gap-3 px-6 py-4 border-t border-gray-100 shrink-0 bg-white">
                     <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                    <button onClick={() => onSave(selected)} className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">
-                        Save Permissions
+                    <button disabled={saving} onClick={async () => { setSaving(true); await onSave(selected); setSaving(false); }} className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all disabled:opacity-50">
+                        {saving ? 'Saving...' : 'Save Permissions'}
                     </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/* ──────────── Delete Modal ──────────── */
-function DeleteModal({ role, onClose, onConfirm }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 text-center">Delete Role</h3>
-                <p className="text-sm text-gray-500 text-center mt-2">Are you sure you want to delete <span className="font-semibold text-gray-700">{role.name}</span>? Users with this role will lose access.</p>
-                <div className="flex gap-3 mt-6">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                    <button onClick={() => { onConfirm(role.id); onClose(); }} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Delete</button>
                 </div>
             </div>
         </div>
@@ -195,12 +193,36 @@ export default function Roles() {
     const { items: allPermissions } = useSelector((state) => state.permissions);
     const [modal, setModal] = useState(null);
     const [permModal, setPermModal] = useState(null);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-
+    const [search, setSearch] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     useEffect(() => {
         dispatch(fetchRoles());
         dispatch(fetchPermissions());
     }, [dispatch]);
+
+    // Client-side filtering
+    const filtered = roles.filter(r => {
+        const matchSearch = !search || r.name?.toLowerCase().includes(search.toLowerCase()) || r.slug?.toLowerCase().includes(search.toLowerCase());
+        const matchDateFrom = !dateFrom || (r.created_at && new Date(r.created_at) >= new Date(dateFrom));
+        const matchDateTo = !dateTo || (r.created_at && new Date(r.created_at) <= new Date(dateTo + 'T23:59:59'));
+        return matchSearch && matchDateFrom && matchDateTo;
+    });
+
+    const handleSearchChange = (value) => {
+        setSearch(value);
+    };
+
+    const handleDateChange = (key, value) => {
+        if (key === 'date_from') setDateFrom(value);
+        if (key === 'date_to') setDateTo(value);
+    };
+
+    const handleReset = () => {
+        setSearch('');
+        setDateFrom('');
+        setDateTo('');
+    };
 
     const handleSave = async (data) => {
         const isEdit = !!data.id;
@@ -243,6 +265,19 @@ export default function Roles() {
                 </button>
             </div>
 
+            {/* Advanced Filters */}
+            <AdvancedFilters
+                search={search}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search roles by name or slug..."
+                filters={[]}
+                onFilterChange={() => {}}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateChange={handleDateChange}
+                onReset={handleReset}
+            />
+
             {/* Role Cards */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
@@ -250,7 +285,7 @@ export default function Roles() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {roles.map((role) => {
+                    {filtered.map((role) => {
                         const permCount = role.permissions?.length || 0;
                         const gradient = roleGradients[role.slug] || 'from-gray-500 to-gray-600';
                         const icon = roleIcons[role.slug] || roleIcons.customer;
@@ -319,7 +354,7 @@ export default function Roles() {
                                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
                                         </button>
                                         {role.slug !== 'super_admin' && (
-                                            <button onClick={() => setDeleteTarget(role)}
+                                            <button onClick={() => handleDelete(role.id)}
                                                 className="py-2 px-3 rounded-xl border border-red-100 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors">
                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                             </button>
@@ -334,7 +369,7 @@ export default function Roles() {
 
             {modal && <RoleModal role={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSave={handleSave} />}
             {permModal && <PermissionModal role={permModal} allPermissions={allPermissions} onClose={() => setPermModal(null)} onSave={handlePermSave} />}
-            {deleteTarget && <DeleteModal role={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />}
+
         </div>
     );
 }

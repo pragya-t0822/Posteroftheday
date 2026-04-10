@@ -14,17 +14,17 @@ import Categories from './pages/categories/Categories';
 import Frames from './pages/frames/Frames';
 import FrameRequests from './pages/frameRequests/FrameRequests';
 import Reminders from './pages/reminders/Reminders';
+import FollowUps from './pages/followUps/FollowUps';
+import Notifications from './pages/notifications/Notifications';
+import WalletWithdrawals from './pages/walletWithdrawals/WalletWithdrawals';
 import ReminderForm from './pages/reminders/ReminderForm';
 import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import CustomerProtectedRoute from './components/CustomerProtectedRoute';
-import CustomerLayout from './components/CustomerLayout';
-import CustomerLogin from './pages/customer/CustomerLogin';
-import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerRegister from './pages/customer/CustomerRegister';
 import PaymentCheckout from './pages/customer/PaymentCheckout';
 import PaymentSuccess from './pages/customer/PaymentSuccess';
 import PaymentFailed from './pages/customer/PaymentFailed';
+import DownloadApp from './pages/customer/DownloadApp';
 
 export default function App() {
     return (
@@ -37,8 +37,9 @@ export default function App() {
                 <Route path="/payment/checkout" element={<PaymentCheckout />} />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/payment/failed" element={<PaymentFailed />} />
+                <Route path="/download-app" element={<DownloadApp />} />
 
-                {/* Protected — Admin Layout */}
+                {/* Protected — Admin Layout (admin & staff only) */}
                 <Route
                     element={
                         <ProtectedRoute>
@@ -61,23 +62,12 @@ export default function App() {
                     <Route path="/reminders" element={<ProtectedRoute permission="reminders.view"><Reminders /></ProtectedRoute>} />
                     <Route path="/reminders/create" element={<ProtectedRoute permission="reminders.view"><ReminderForm /></ProtectedRoute>} />
                     <Route path="/reminders/:id/edit" element={<ProtectedRoute permission="reminders.view"><ReminderForm /></ProtectedRoute>} />
+                    <Route path="/follow-ups" element={<ProtectedRoute permission="follow-ups.view"><FollowUps /></ProtectedRoute>} />
+                    <Route path="/notifications" element={<ProtectedRoute permission="notifications.view"><Notifications /></ProtectedRoute>} />
+                    <Route path="/wallet-withdrawals" element={<ProtectedRoute permission="wallet-withdrawals.view"><WalletWithdrawals /></ProtectedRoute>} />
                 </Route>
 
-                {/* Customer Login (public) */}
-                <Route path="/customer/login" element={<CustomerLogin />} />
-
-                {/* Protected — Customer Layout */}
-                <Route
-                    element={
-                        <CustomerProtectedRoute>
-                            <CustomerLayout />
-                        </CustomerProtectedRoute>
-                    }
-                >
-                    <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-                </Route>
-
-                {/* Fallback */}
+                {/* Fallback — all unknown routes go to admin login */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </BrowserRouter>

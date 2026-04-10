@@ -4,43 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FrameLayer;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class FrameLayerController extends Controller
 {
+    use HasAdvancedFiltering;
+
     public function index(Request $request)
     {
         $query = FrameLayer::with(['frame.category.translations', 'frame.translations', 'translations']);
 
-        // Server-side search
-        if ($search = $request->input('search')) {
-            $query->whereAny(['title', 'slug'], 'like', "%{$search}%");
-        }
-
-        // Filter by frame
-        if ($frameId = $request->input('frame_id')) {
-            $query->where('frame_id', $frameId);
-        }
-
-        // Filter by category (through frame)
-        if ($categoryId = $request->input('category_id')) {
-            $query->whereHas('frame', function ($q) use ($categoryId) {
-                $q->where('category_id', $categoryId);
-            });
-        }
-
-        // Filter by language (layers that have a translation in this language)
-        if ($language = $request->input('language')) {
-            $query->whereHas('translations', function ($q) use ($language) {
-                $q->where('language', $language);
-            });
-        }
-
-        // Filter by status
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
+        $this->applySearch($query, $request, ['title', 'slug']);
+        $this->applyFilters($query, $request, [
+            'is_active' => 'is_active',
+            'frame_id' => 'frame_id',
+            'category_id' => 'frame.category_id',
+            'language' => 'translations.language',
+        ]);
+        $this->applyDateRange($query, $request);
 
         $query->orderBy('sort_order')->orderByDesc('created_at');
 
@@ -136,13 +119,28 @@ class FrameLayerController extends Controller
 
     public function destroy(FrameLayer $frameLayer)
     {
-        if ($frameLayer->file_path && Storage::disk('public')->exists($frameLayer->file_path)) {
-            Storage::disk('public')->delete($frameLayer->file_path);
+        try {
+            $frameLayer->translations()->delete();
+
+            if ($frameLayer->file_path && Storage::disk('public')->exists($frameLayer->file_path)) {
+                Storage::disk('public')->delete($frameLayer->file_path);
+            }
+
+            $frameLayer->delete();
+
+            return response()->json(['message' => 'Frame layer deleted']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to delete frame layer: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function download(FrameLayer $frameLayer)
+    {
+        if (!$frameLayer->file_path || !Storage::disk('public')->exists($frameLayer->file_path)) {
+            return response()->json(['message' => 'File not found'], 404);
         }
 
-        $frameLayer->delete();
-
-        return response()->json(['message' => 'Frame layer deleted']);
+        return Storage::disk('public')->download($frameLayer->file_path, $frameLayer->file_name ?: basename($frameLayer->file_path));
     }
 
     public function toggleActive(FrameLayer $frameLayer)
@@ -171,5 +169,29 @@ class FrameLayerController extends Controller
                 );
             }
         }
+    }
+
+    public function bulkActivate(Request $request)
+    {
+        return $this->bulkUpdateField(FrameLayer::class, $request, 'is_active', true);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        return $this->bulkUpdateField(FrameLayer::class, $request, 'is_active', false);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(FrameLayer::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(FrameLayer::class, $request,
+            ['id', 'title', 'slug', 'is_active', 'created_at'],
+            ['ID', 'Title', 'Slug', 'Active', 'Created At'],
+            'frame-layers.csv'
+        );
     }
 }

@@ -4,13 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    public function index()
+    use HasAdvancedFiltering;
+
+    public function index(Request $request)
     {
-        return response()->json(Role::with('permissions')->where('is_active', true)->get());
+        $query = Role::with('permissions')->where('is_active', true);
+
+        $this->applySearch($query, $request, ['name']);
+        $this->applyDateRange($query, $request);
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -66,5 +74,19 @@ class RoleController extends Controller
         $role->permissions()->sync($request->permissions);
 
         return response()->json($role->load('permissions'));
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(Role::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(Role::class, $request,
+            ['id', 'name', 'slug', 'created_at'],
+            ['ID', 'Name', 'Slug', 'Created At'],
+            'roles.csv'
+        );
     }
 }

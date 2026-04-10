@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PhoneOtp;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\SubscriptionPackage;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class CustomerRegistrationController extends Controller
 {
@@ -17,19 +17,35 @@ class CustomerRegistrationController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
             'package_id' => 'required|exists:subscription_packages,id',
             'referral_code' => 'nullable|string|exists:users,referral_code',
         ]);
 
-        $customerRole = Role::where('slug', 'customer')->first();
+        // Ensure phone number has been verified via OTP
+        $verifiedOtp = PhoneOtp::where('phone', $request->phone)
+            ->where('verified', true)
+            ->first();
+
+        if (!$verifiedOtp) {
+            return response()->json([
+                'message' => 'Phone number must be verified before registration.',
+            ], 422);
+        }
+
+        // Clean up used OTP records
+        PhoneOtp::where('phone', $request->phone)->delete();
+
+        $customerRole = Role::where('slug', 'customer')->firstOrFail();
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id' => $customerRole?->id,
+            'phone' => $request->phone,
+            'password' => $request->password,
+            'status' => 'active',
+            'role_id' => $customerRole->id,
         ]);
 
         // Generate unique referral code for this customer

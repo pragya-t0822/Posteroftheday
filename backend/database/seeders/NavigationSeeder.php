@@ -62,18 +62,39 @@ class NavigationSeeder extends Seeder
                 'sort_order' => 7,
             ],
             [
+                'title' => 'Follow-Ups',
+                'icon' => 'Phone',
+                'route' => '/follow-ups',
+                'permission_slug' => 'follow-ups.view',
+                'sort_order' => 8,
+            ],
+            [
+                'title' => 'Notifications',
+                'icon' => 'Megaphone',
+                'route' => '/notifications',
+                'permission_slug' => 'notifications.view',
+                'sort_order' => 9,
+            ],
+            [
+                'title' => 'Wallet Withdrawals',
+                'icon' => 'Wallet',
+                'route' => '/wallet-withdrawals',
+                'permission_slug' => 'wallet-withdrawals.view',
+                'sort_order' => 10,
+            ],
+            [
                 'title' => 'User Management',
                 'icon' => 'Users',
                 'route' => '/users',
                 'permission_slug' => 'users.view',
-                'sort_order' => 8,
+                'sort_order' => 11,
             ],
             [
                 'title' => 'Roles & Access',
                 'icon' => 'Shield',
                 'route' => null,
                 'permission_slug' => 'roles.view',
-                'sort_order' => 9,
+                'sort_order' => 12,
                 'children' => [
                     [
                         'title' => 'Roles',
@@ -96,14 +117,14 @@ class NavigationSeeder extends Seeder
                 'icon' => 'CreditCard',
                 'route' => '/packages',
                 'permission_slug' => 'subscriptions.view',
-                'sort_order' => 10,
+                'sort_order' => 13,
             ],
             [
                 'title' => 'Settings',
                 'icon' => 'Settings',
                 'route' => '/settings',
                 'permission_slug' => 'settings.view',
-                'sort_order' => 11,
+                'sort_order' => 14,
             ],
         ];
 

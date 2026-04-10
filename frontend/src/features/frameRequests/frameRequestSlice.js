@@ -40,6 +40,24 @@ export const deleteFrameRequest = createAsyncThunk('frameRequests/delete', async
     }
 });
 
+export const bulkDeleteFrameRequests = createAsyncThunk('frameRequests/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/frame-requests/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportFrameRequests = createAsyncThunk('frameRequests/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/frame-requests/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'frame-requests.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const frameRequestSlice = createSlice({
     name: 'frameRequests',
     initialState: {

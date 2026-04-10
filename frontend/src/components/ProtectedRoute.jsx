@@ -8,9 +8,9 @@ export default function ProtectedRoute({ children, permission }) {
         return <Navigate to="/login" replace />;
     }
 
-    // Block customers from admin panel
+    // Block customers from admin panel entirely
     if (user?.role?.slug === 'customer') {
-        return <Navigate to="/customer/dashboard" replace />;
+        return <Navigate to="/get-started" replace />;
     }
 
     if (permission && !permissions.includes(permission)) {

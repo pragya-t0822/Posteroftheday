@@ -5,21 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Reminder;
 use App\Models\Category;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 
 class ReminderController extends Controller
 {
+    use HasAdvancedFiltering;
+
     public function index(Request $request)
     {
         $query = Reminder::query();
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('occasion', 'like', "%{$search}%");
-            });
-        }
+        $this->applySearch($query, $request, ['title', 'occasion']);
 
+        // Status filter maps active/inactive to is_active boolean
         if ($status = $request->input('status')) {
             if ($status === 'active') {
                 $query->where('is_active', true);
@@ -28,12 +27,7 @@ class ReminderController extends Controller
             }
         }
 
-        if ($dateFrom = $request->input('date_from')) {
-            $query->where('reminder_date', '>=', $dateFrom);
-        }
-        if ($dateTo = $request->input('date_to')) {
-            $query->where('reminder_date', '<=', $dateTo);
-        }
+        $this->applyDateRange($query, $request, 'reminder_date');
 
         $reminders = $query->orderByDesc('reminder_date')
             ->paginate($request->input('per_page', 10));
@@ -133,5 +127,29 @@ class ReminderController extends Controller
             'reminders' => $reminders,
             'priority_categories' => $categories,
         ]);
+    }
+
+    public function bulkActivate(Request $request)
+    {
+        return $this->bulkUpdateField(Reminder::class, $request, 'is_active', true);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        return $this->bulkUpdateField(Reminder::class, $request, 'is_active', false);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(Reminder::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(Reminder::class, $request,
+            ['id', 'title', 'occasion', 'is_active', 'reminder_date', 'created_at'],
+            ['ID', 'Title', 'Occasion', 'Active', 'Reminder Date', 'Created At'],
+            'reminders.csv'
+        );
     }
 }

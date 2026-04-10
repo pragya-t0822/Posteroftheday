@@ -4,33 +4,25 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FrameRequest;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class FrameRequestController extends Controller
 {
+    use HasAdvancedFiltering;
+
     // Admin: List all frame layer requests with search, filter, pagination
     public function index(Request $request)
     {
         $query = FrameRequest::with(['customer', 'frameLayer']);
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        if ($customerId = $request->input('customer_id')) {
-            $query->where('customer_id', $customerId);
-        }
+        $this->applySearch($query, $request, ['title', 'customer.name', 'customer.email']);
+        $this->applyFilters($query, $request, [
+            'status' => 'status',
+            'customer_id' => 'customer_id',
+        ]);
+        $this->applyDateRange($query, $request);
 
         $requests = $query->orderByDesc('created_at')
             ->paginate($request->input('per_page', 10));
@@ -172,5 +164,19 @@ class FrameRequestController extends Controller
             ->paginate($request->input('per_page', 10));
 
         return response()->json($requests);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(FrameRequest::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(FrameRequest::class, $request,
+            ['id', 'title', 'status', 'created_at'],
+            ['ID', 'Title', 'Status', 'Created At'],
+            'frame-requests.csv'
+        );
     }
 }

@@ -4,22 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Font;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class FontController extends Controller
 {
+    use HasAdvancedFiltering;
+
     public function index(Request $request)
     {
         $query = Font::query();
 
-        if ($search = $request->input('search')) {
-            $query->whereAny(['name', 'family'], 'like', "%{$search}%");
-        }
-
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
+        $this->applySearch($query, $request, ['name', 'family']);
+        $this->applyFilters($query, $request, ['is_active' => 'is_active']);
+        $this->applyDateRange($query, $request);
 
         $query->orderBy('sort_order')->orderByDesc('created_at');
 
@@ -122,5 +121,29 @@ class FontController extends Controller
         $font->update(['is_default' => true]);
 
         return response()->json($font);
+    }
+
+    public function bulkActivate(Request $request)
+    {
+        return $this->bulkUpdateField(Font::class, $request, 'is_active', true);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        return $this->bulkUpdateField(Font::class, $request, 'is_active', false);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(Font::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(Font::class, $request,
+            ['id', 'name', 'family', 'is_active', 'created_at'],
+            ['ID', 'Name', 'Family', 'Active', 'Created At'],
+            'fonts.csv'
+        );
     }
 }

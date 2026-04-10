@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPublicPackages, registerCustomer, setSelectedPackage, clearCustomerError } from '../../features/customer/customerSlice';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Logo from '../../components/Logo';
 import Footer from '../../components/Footer';
 
@@ -42,7 +42,7 @@ export default function CustomerRegister() {
             if (result.payload.requires_payment) {
                 navigate('/payment/checkout', { state: { subscription: result.payload.subscription } });
             } else {
-                navigate('/payment/success', { state: { free: true } });
+                navigate('/download-app', { state: { free: true } });
             }
         }
     };
@@ -52,17 +52,16 @@ export default function CustomerRegister() {
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50">
 
-            {/* Navbar */}
-            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-3">
-                        <Logo size={34} />
-                        <span className="text-base font-bold text-gray-900">Poster of the Day</span>
-                    </Link>
-                    <Link to="/customer/login" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5">
-                        <span>Already have an account?</span>
-                        <span className="text-rose-500 hover:text-rose-600">Sign in</span>
-                    </Link>
+            {/* Header Navigation Tabs */}
+            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+                <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <Logo size={30} />
+                        <span className="text-sm font-bold text-gray-900">Poster of the Day</span>
+                    </div>
+                    <span className="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400">
+                        Customer Registration
+                    </span>
                 </div>
             </nav>
 

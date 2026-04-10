@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPermissions, createPermission, updatePermission, deletePermission } from '../../features/permissions/permissionSlice';
 import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
+import AdvancedFilters from '../../components/AdvancedFilters';
 
 const moduleColors = {
     users: { bg: 'bg-blue-50', text: 'text-blue-600', ring: 'ring-blue-500/10', icon: 'from-blue-500 to-blue-600' },
@@ -39,12 +40,27 @@ function PermModal({ permission, modules, onClose, onSave }) {
         module: permission?.module || '',
         description: permission?.description || '',
     });
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState({});
+    const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: undefined })); };
     const inputCls = 'w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 transition-all';
 
-    const handleSubmit = (e) => {
+    const validate = () => {
+        const errs = {};
+        if (!form.name.trim()) errs.name = 'Permission name is required';
+        if (!form.slug.trim()) errs.slug = 'Slug is required';
+        else if (!/^[a-z][a-z0-9._]*$/.test(form.slug)) errs.slug = 'Slug must be lowercase with dots/underscores only';
+        if (!form.module.trim()) errs.module = 'Module is required';
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(permission ? { id: permission.id, ...form } : form);
+        if (!validate()) return;
+        setSaving(true);
+        await onSave(permission ? { id: permission.id, ...form } : form);
+        setSaving(false);
     };
 
     return (
@@ -63,19 +79,22 @@ function PermModal({ permission, modules, onClose, onSave }) {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Permission Name</label>
-                            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} placeholder="View Users" required />
+                            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} className={`${inputCls} ${errors.name ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="View Users" />
+                            {errors.name && <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Slug</label>
-                            <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={inputCls} placeholder="users.view" required />
+                            <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={`${inputCls} ${errors.slug ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="users.view" />
+                            {errors.slug && <p className="text-[11px] text-red-500 mt-1">{errors.slug}</p>}
                         </div>
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Module</label>
-                        <input type="text" value={form.module} onChange={e => set('module', e.target.value)} className={inputCls} placeholder="users" required list="module-list" />
+                        <input type="text" value={form.module} onChange={e => set('module', e.target.value)} className={`${inputCls} ${errors.module ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="users" list="module-list" />
                         <datalist id="module-list">
                             {modules.map(m => <option key={m} value={m} />)}
                         </datalist>
+                        {errors.module && <p className="text-[11px] text-red-500 mt-1">{errors.module}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Description <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -83,30 +102,9 @@ function PermModal({ permission, modules, onClose, onSave }) {
                     </div>
                     <div className="flex gap-3 pt-3 border-t border-gray-100">
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                        <button type="submit" className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">{permission ? 'Update' : 'Create'}</button>
+                        <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all disabled:opacity-50">{saving ? 'Saving...' : permission ? 'Update' : 'Create'}</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    );
-}
-
-/* ──────────── Delete Modal ──────────── */
-function DeleteModal({ permission, onClose, onConfirm }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 text-center">Delete Permission</h3>
-                <p className="text-sm text-gray-500 text-center mt-2">Delete <span className="font-semibold text-gray-700">{permission.name}</span>? Roles using it will lose this access.</p>
-                <div className="flex gap-3 mt-6">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                    <button onClick={() => { onConfirm(permission.id); onClose(); }} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Delete</button>
-                </div>
             </div>
         </div>
     );
@@ -117,12 +115,13 @@ export default function Permissions() {
     const dispatch = useDispatch();
     const { items: permissions, loading } = useSelector((state) => state.permissions);
     const [modal, setModal] = useState(null);
-    const [deleteTarget, setDeleteTarget] = useState(null);
     const [search, setSearch] = useState('');
-
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     useEffect(() => { dispatch(fetchPermissions()); }, [dispatch]);
 
     const grouped = permissions.reduce((acc, p) => {
+        if (p.module?.toLowerCase() === 'customers') return acc;
         if (!acc[p.module]) acc[p.module] = [];
         acc[p.module].push(p);
         return acc;
@@ -130,17 +129,47 @@ export default function Permissions() {
 
     const modules = Object.keys(grouped);
 
-    const filteredGrouped = search
-        ? Object.entries(grouped).reduce((acc, [mod, perms]) => {
-            const filtered = perms.filter(p =>
-                p.name.toLowerCase().includes(search.toLowerCase()) ||
-                p.slug.toLowerCase().includes(search.toLowerCase()) ||
-                mod.toLowerCase().includes(search.toLowerCase())
-            );
-            if (filtered.length > 0) acc[mod] = filtered;
-            return acc;
-        }, {})
-        : grouped;
+    const filteredGrouped = (() => {
+        let result = grouped;
+        if (search) {
+            result = Object.entries(result).reduce((acc, [mod, perms]) => {
+                const filtered = perms.filter(p =>
+                    p.name.toLowerCase().includes(search.toLowerCase()) ||
+                    p.slug.toLowerCase().includes(search.toLowerCase()) ||
+                    mod.toLowerCase().includes(search.toLowerCase())
+                );
+                if (filtered.length > 0) acc[mod] = filtered;
+                return acc;
+            }, {});
+        }
+        if (dateFrom || dateTo) {
+            result = Object.entries(result).reduce((acc, [mod, perms]) => {
+                const filtered = perms.filter(p => {
+                    const matchDateFrom = !dateFrom || (p.created_at && new Date(p.created_at) >= new Date(dateFrom));
+                    const matchDateTo = !dateTo || (p.created_at && new Date(p.created_at) <= new Date(dateTo + 'T23:59:59'));
+                    return matchDateFrom && matchDateTo;
+                });
+                if (filtered.length > 0) acc[mod] = filtered;
+                return acc;
+            }, {});
+        }
+        return result;
+    })();
+
+    const handleSearchChange = (value) => {
+        setSearch(value);
+    };
+
+    const handleDateChange = (key, value) => {
+        if (key === 'date_from') setDateFrom(value);
+        if (key === 'date_to') setDateTo(value);
+    };
+
+    const handleReset = () => {
+        setSearch('');
+        setDateFrom('');
+        setDateTo('');
+    };
 
     const handleSave = async (data) => {
         const isEdit = !!data.id;
@@ -217,21 +246,18 @@ export default function Permissions() {
                 })}
             </div>
 
-            {/* Search */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                <div className="relative">
-                    <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-all"
-                        placeholder="Search permissions by name, slug, or module..."
-                    />
-                </div>
-            </div>
+            {/* Advanced Filters */}
+            <AdvancedFilters
+                search={search}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search permissions by name, slug, or module..."
+                filters={[]}
+                onFilterChange={() => {}}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateChange={handleDateChange}
+                onReset={handleReset}
+            />
 
             {/* Permission Groups */}
             {loading ? (
@@ -289,10 +315,10 @@ export default function Permissions() {
                                             )}
                                             {/* Actions */}
                                             <div className="inline-flex items-center gap-1 transition-opacity">
-                                                <button onClick={() => setModal(p)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors" title="Edit">
+                                                <button onClick={() => setModal(p)} className="p-2 rounded-lg hover:bg-amber-50 text-amber-500 hover:text-amber-700 transition-colors" title="Edit">
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
                                                 </button>
-                                                <button onClick={() => setDeleteTarget(p)} className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Delete">
+                                                <button onClick={() => handleDelete(p.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors" title="Delete">
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                                 </button>
                                             </div>
@@ -307,7 +333,7 @@ export default function Permissions() {
 
             {/* Modals */}
             {modal && <PermModal permission={modal === 'new' ? null : modal} modules={modules} onClose={() => setModal(null)} onSave={handleSave} />}
-            {deleteTarget && <DeleteModal permission={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />}
+
         </div>
     );
 }

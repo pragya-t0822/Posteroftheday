@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPackages, createPackage, updatePackage, deletePackage, togglePackage } from '../../features/subscriptions/subscriptionSlice';
 import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
+import AdvancedFilters from '../../components/AdvancedFilters';
 
 const durationLabels = { monthly: 'Monthly', quarterly: 'Quarterly', half_yearly: 'Half-Yearly', yearly: 'Yearly' };
 const durationGradients = {
@@ -35,14 +36,32 @@ function PackageModal({ pkg, onClose, onSave }) {
         sort_order: pkg?.sort_order || 0,
     });
 
-    const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+    const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState({});
+    const set = (key, val) => { setForm(f => ({ ...f, [key]: val })); setErrors(e => ({ ...e, [key]: undefined })); };
 
     const handleDurationChange = (type) => {
         setForm(f => ({ ...f, duration_type: type, duration_days: durationDays[type] || 30 }));
+        setErrors(e => ({ ...e, duration_type: undefined, duration_days: undefined }));
     };
 
-    const handleSubmit = (e) => {
+    const validate = () => {
+        const errs = {};
+        if (!form.name.trim()) errs.name = 'Package name is required';
+        if (!form.slug.trim()) errs.slug = 'Slug is required';
+        if (form.price === '' || form.price === null || form.price === undefined) errs.price = 'Price is required';
+        else if (parseFloat(form.price) < 0) errs.price = 'Price must be 0 or more';
+        if (form.duration_days && parseInt(form.duration_days) < 1) errs.duration_days = 'Duration must be at least 1 day';
+        const disc = parseInt(form.discount_percent);
+        if (form.discount_percent !== '' && (disc < 0 || disc > 100)) errs.discount_percent = 'Discount must be 0-100';
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validate()) return;
+        setSaving(true);
         const data = {
             ...form,
             features: form.features ? form.features.split(',').map(f => f.trim()).filter(Boolean) : [],
@@ -51,7 +70,8 @@ function PackageModal({ pkg, onClose, onSave }) {
             discount_percent: parseInt(form.discount_percent) || 0,
             sort_order: parseInt(form.sort_order) || 0,
         };
-        onSave(pkg ? { id: pkg.id, ...data } : data);
+        await onSave(pkg ? { id: pkg.id, ...data } : data);
+        setSaving(false);
     };
 
     const inputCls = 'w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 transition-all';
@@ -59,7 +79,6 @@ function PackageModal({ pkg, onClose, onSave }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                {/* Modal header */}
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <div>
                         <h3 className="text-lg font-bold text-gray-900">{pkg ? 'Edit Package' : 'New Package'}</h3>
@@ -73,19 +92,19 @@ function PackageModal({ pkg, onClose, onSave }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
-                    {/* Row 1: Name + Slug */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Package Name</label>
-                            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} className={inputCls} placeholder="Quarterly Pro" required />
+                            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} className={`${inputCls} ${errors.name ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="Quarterly Pro" />
+                            {errors.name && <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Slug</label>
-                            <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={inputCls} placeholder="quarterly-pro" required />
+                            <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={`${inputCls} ${errors.slug ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="quarterly-pro" />
+                            {errors.slug && <p className="text-[11px] text-red-500 mt-1">{errors.slug}</p>}
                         </div>
                     </div>
 
-                    {/* Row 2: Duration */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Duration Type</label>
@@ -98,39 +117,38 @@ function PackageModal({ pkg, onClose, onSave }) {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Duration (days)</label>
-                            <input type="number" value={form.duration_days} onChange={e => set('duration_days', e.target.value)} className={inputCls} required min={1} />
+                            <input type="number" value={form.duration_days} onChange={e => set('duration_days', e.target.value)} className={`${inputCls} ${errors.duration_days ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} min={1} />
+                            {errors.duration_days && <p className="text-[11px] text-red-500 mt-1">{errors.duration_days}</p>}
                         </div>
                     </div>
 
-                    {/* Row 3: Pricing */}
                     <div className="grid grid-cols-3 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Price (₹)</label>
-                            <input type="number" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} className={inputCls} required min={0} />
+                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Price</label>
+                            <input type="number" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} className={`${inputCls} ${errors.price ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} min={0} />
+                            {errors.price && <p className="text-[11px] text-red-500 mt-1">{errors.price}</p>}
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Original (₹)</label>
+                            <label className="block text-xs font-medium text-gray-500 mb-1.5">Original</label>
                             <input type="number" step="0.01" value={form.original_price} onChange={e => set('original_price', e.target.value)} className={inputCls} min={0} />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Discount %</label>
-                            <input type="number" value={form.discount_percent} onChange={e => set('discount_percent', e.target.value)} className={inputCls} min={0} max={100} />
+                            <input type="number" value={form.discount_percent} onChange={e => set('discount_percent', e.target.value)} className={`${inputCls} ${errors.discount_percent ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} min={0} max={100} />
+                            {errors.discount_percent && <p className="text-[11px] text-red-500 mt-1">{errors.discount_percent}</p>}
                         </div>
                     </div>
 
-                    {/* Description */}
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
                         <textarea value={form.description} onChange={e => set('description', e.target.value)} className={inputCls} rows={2} placeholder="Brief plan description..." />
                     </div>
 
-                    {/* Features */}
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1.5">Features <span className="text-gray-400">(comma-separated)</span></label>
                         <textarea value={form.features} onChange={e => set('features', e.target.value)} className={inputCls} rows={2} placeholder="HD downloads, Premium templates, Priority support" />
                     </div>
 
-                    {/* Toggles row */}
                     <div className="flex items-center gap-5 py-1">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={form.is_popular} onChange={e => set('is_popular', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-rose-500 focus:ring-rose-500" />
@@ -146,43 +164,15 @@ function PackageModal({ pkg, onClose, onSave }) {
                         </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-3 pt-3 border-t border-gray-100">
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">
-                            {pkg ? 'Update Package' : 'Create Package'}
+                        <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all disabled:opacity-50">
+                            {saving ? 'Saving...' : pkg ? 'Update Package' : 'Create Package'}
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-    );
-}
-
-/* ──────────── Delete Confirm ──────────── */
-function DeleteModal({ pkg, onClose, onConfirm }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 text-center">Delete Package</h3>
-                <p className="text-sm text-gray-500 text-center mt-2">
-                    Are you sure you want to delete <span className="font-semibold text-gray-700">{pkg.name}</span>? This action cannot be undone.
-                </p>
-                <div className="flex gap-3 mt-6">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                        Cancel
-                    </button>
-                    <button onClick={() => { onConfirm(pkg.id); onClose(); }} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">
-                        Delete
-                    </button>
-                </div>
             </div>
         </div>
     );
@@ -193,9 +183,40 @@ export default function Subscriptions() {
     const dispatch = useDispatch();
     const { items: packages, loading } = useSelector((state) => state.subscriptions);
     const [modal, setModal] = useState(null);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     useEffect(() => { dispatch(fetchPackages()); }, [dispatch]);
+
+    // Client-side filtering
+    const filtered = packages.filter(p => {
+        const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.slug?.toLowerCase().includes(search.toLowerCase());
+        const matchStatus = !statusFilter || (statusFilter === 'active' && p.is_active) || (statusFilter === 'inactive' && !p.is_active);
+        const matchDateFrom = !dateFrom || (p.created_at && new Date(p.created_at) >= new Date(dateFrom));
+        const matchDateTo = !dateTo || (p.created_at && new Date(p.created_at) <= new Date(dateTo + 'T23:59:59'));
+        return matchSearch && matchStatus && matchDateFrom && matchDateTo;
+    });
+
+    const handleSearchChange = (value) => {
+        setSearch(value);
+    };
+
+    const handleFilterChange = (key, value) => {
+        if (key === 'status') setStatusFilter(value);
+    };
+
+    const handleDateChange = (key, value) => {
+        if (key === 'date_from') setDateFrom(value);
+        if (key === 'date_to') setDateTo(value);
+    };
+
+    const handleReset = () => {
+        setSearch('');
+        setStatusFilter('');
+        setDateFrom('');
+        setDateTo('');
+    };
 
     const handleSave = async (data) => {
         const isEdit = !!data.id;
@@ -284,6 +305,29 @@ export default function Subscriptions() {
                 </div>
             </div>
 
+            {/* Advanced Filters */}
+            <AdvancedFilters
+                search={search}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search packages by name or slug..."
+                filters={[
+                    {
+                        key: 'status',
+                        label: 'All Status',
+                        value: statusFilter,
+                        options: [
+                            { value: 'active', label: 'Active' },
+                            { value: 'inactive', label: 'Inactive' },
+                        ],
+                    },
+                ]}
+                onFilterChange={handleFilterChange}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateChange={handleDateChange}
+                onReset={handleReset}
+            />
+
             {/* Package Cards */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
@@ -292,25 +336,27 @@ export default function Subscriptions() {
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                 </div>
-            ) : packages.length === 0 ? (
+            ) : filtered.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
                     <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
                         <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">No packages yet</h3>
-                    <p className="text-sm text-gray-400 mt-1 mb-5">Create your first package to get started.</p>
-                    <button onClick={() => setModal('new')} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        Add Package
-                    </button>
+                    <h3 className="text-lg font-semibold text-gray-900">{search || statusFilter || dateFrom || dateTo ? 'No packages found' : 'No packages yet'}</h3>
+                    <p className="text-sm text-gray-400 mt-1 mb-5">{search || statusFilter || dateFrom || dateTo ? 'Try adjusting your filters.' : 'Create your first package to get started.'}</p>
+                    {!search && !statusFilter && !dateFrom && !dateTo && (
+                        <button onClick={() => setModal('new')} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-rose-500 transition-all">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Add Package
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-                    {packages.map((pkg) => {
+                    {filtered.map((pkg) => {
                         const free = parseFloat(pkg.price) === 0;
                         const popular = pkg.is_popular;
                         return (
@@ -331,7 +377,7 @@ export default function Subscriptions() {
                                     </div>
                                 )}
 
-                                {/* Card top — colored bar */}
+                                {/* Card top */}
                                 <div className={`h-1.5 rounded-t-2xl bg-gradient-to-r ${durationGradients[pkg.duration_type] || 'from-gray-400 to-gray-500'}`} />
 
                                 <div className="p-5 flex flex-col flex-1">
@@ -348,10 +394,8 @@ export default function Subscriptions() {
                                         </button>
                                     </div>
 
-                                    {/* Name */}
                                     <h3 className="text-base font-bold text-gray-900 leading-tight">{pkg.name}</h3>
 
-                                    {/* Price */}
                                     <div className="mt-2.5 mb-0.5">
                                         <span className="text-3xl font-extrabold text-gray-900 leading-none">
                                             {free ? 'Free' : `₹${parseInt(pkg.price)}`}
@@ -363,7 +407,6 @@ export default function Subscriptions() {
                                         )}
                                     </div>
 
-                                    {/* Original price + Discount */}
                                     {pkg.original_price && parseFloat(pkg.original_price) > parseFloat(pkg.price) ? (
                                         <div className="flex items-center gap-1.5 mt-1">
                                             <span className="text-xs text-gray-400 line-through">₹{parseInt(pkg.original_price)}</span>
@@ -377,15 +420,12 @@ export default function Subscriptions() {
 
                                     <p className="text-[11px] text-gray-400 mt-1 mb-3">{pkg.duration_days} days access</p>
 
-                                    {/* Description */}
                                     {pkg.description && (
                                         <p className="text-xs text-gray-500 mb-3 leading-relaxed line-clamp-2">{pkg.description}</p>
                                     )}
 
-                                    {/* Divider */}
                                     <div className="h-px bg-gray-100 mb-3" />
 
-                                    {/* Features */}
                                     {pkg.features && pkg.features.length > 0 && (
                                         <ul className="space-y-1.5 mb-auto">
                                             {pkg.features.map((feature, i) => (
@@ -399,7 +439,6 @@ export default function Subscriptions() {
                                         </ul>
                                     )}
 
-                                    {/* Actions */}
                                     <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
                                         <button
                                             onClick={() => setModal(pkg)}
@@ -411,7 +450,7 @@ export default function Subscriptions() {
                                             Edit
                                         </button>
                                         <button
-                                            onClick={() => setDeleteTarget(pkg)}
+                                            onClick={() => handleDelete(pkg.id)}
                                             className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl border border-red-100 text-xs font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-all"
                                         >
                                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -435,13 +474,7 @@ export default function Subscriptions() {
                     onSave={handleSave}
                 />
             )}
-            {deleteTarget && (
-                <DeleteModal
-                    pkg={deleteTarget}
-                    onClose={() => setDeleteTarget(null)}
-                    onConfirm={handleDelete}
-                />
-            )}
+
         </div>
     );
 }

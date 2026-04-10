@@ -37,6 +37,24 @@ export const deletePermission = createAsyncThunk('permissions/delete', async (id
     }
 });
 
+export const bulkDeletePermissions = createAsyncThunk('permissions/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/permissions/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportPermissions = createAsyncThunk('permissions/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/permissions/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'permissions.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const permissionSlice = createSlice({
     name: 'permissions',
     initialState: { items: [], loading: false, error: null },

@@ -37,6 +37,15 @@ export const fetchCustomerDetail = createAsyncThunk('customerManagement/fetchDet
     }
 });
 
+export const toggleCustomerStatus = createAsyncThunk('customerManagement/toggleStatus', async (id, { rejectWithValue }) => {
+    try {
+        const response = await axios.patch(`/customers/${id}/toggle-status`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to toggle customer status');
+    }
+});
+
 export const deleteCustomer = createAsyncThunk('customerManagement/delete', async (id, { rejectWithValue }) => {
     try {
         await axios.delete(`/customers/${id}`);
@@ -71,6 +80,30 @@ export const fetchCustomerFrameRequests = createAsyncThunk('customerManagement/f
     } catch (error) {
         return rejectWithValue('Failed to load frame requests');
     }
+});
+
+export const bulkActivateCustomers = createAsyncThunk('customerManagement/bulkActivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/customers/bulk-activate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeactivateCustomers = createAsyncThunk('customerManagement/bulkDeactivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/customers/bulk-deactivate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeleteCustomers = createAsyncThunk('customerManagement/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/customers/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportCustomers = createAsyncThunk('customerManagement/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/customers/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'customers.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
 });
 
 const customerManagementSlice = createSlice({
@@ -121,6 +154,13 @@ const customerManagementSlice = createSlice({
             .addCase(createCustomer.rejected, (state, action) => { state.error = action.payload; })
             .addCase(updateCustomer.fulfilled, (state) => { state.error = null; })
             .addCase(updateCustomer.rejected, (state, action) => { state.error = action.payload; })
+            .addCase(toggleCustomerStatus.fulfilled, (state, action) => {
+                state.error = null;
+                const updated = action.payload;
+                const idx = state.items.findIndex(c => c.id === updated.id);
+                if (idx !== -1) state.items[idx] = updated;
+            })
+            .addCase(toggleCustomerStatus.rejected, (state, action) => { state.error = action.payload; })
             .addCase(deleteCustomer.fulfilled, (state) => { state.error = null; })
             .addCase(deleteCustomer.rejected, (state, action) => { state.error = action.payload; })
             .addCase(fetchCustomerReferrals.pending, (state) => { state.referralsLoading = true; })

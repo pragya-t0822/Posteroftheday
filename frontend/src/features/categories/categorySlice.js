@@ -46,6 +46,24 @@ export const deleteCategory = createAsyncThunk('categories/delete', async (id, {
     }
 });
 
+export const bulkDeleteCategories = createAsyncThunk('categories/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/categories/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportCategories = createAsyncThunk('categories/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/categories/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'categories.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const categorySlice = createSlice({
     name: 'categories',
     initialState: { tree: [], flat: [], loading: false, error: null },

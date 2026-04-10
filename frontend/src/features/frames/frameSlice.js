@@ -51,6 +51,30 @@ export const toggleFrame = createAsyncThunk('frames/toggle', async (id, { reject
     }
 });
 
+export const bulkActivateFrames = createAsyncThunk('frames/bulkActivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/frames/bulk-activate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeactivateFrames = createAsyncThunk('frames/bulkDeactivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/frames/bulk-deactivate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeleteFrames = createAsyncThunk('frames/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/frames/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportFrames = createAsyncThunk('frames/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/frames/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'frames.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const frameSlice = createSlice({
     name: 'frames',
     initialState: {

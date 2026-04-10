@@ -4,18 +4,23 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index()
+    use HasAdvancedFiltering;
+
+    public function index(Request $request)
     {
-        return response()->json(
-            User::with('role')
-                ->whereDoesntHave('role', fn($q) => $q->where('slug', 'customer'))
-                ->get()
-        );
+        $query = User::with('role')
+            ->whereDoesntHave('role', fn($q) => $q->where('slug', 'customer'));
+
+        $this->applySearch($query, $request, ['name', 'email']);
+        $this->applyFilters($query, $request, ['status' => 'status']);
+        $this->applyDateRange($query, $request);
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -30,7 +35,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'role_id' => $request->role_id,
         ]);
 
@@ -53,7 +58,7 @@ class UserController extends Controller
 
         $data = $request->only('name', 'email', 'role_id');
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            $data['password'] = $request->password;
         }
 
         $user->update($data);
@@ -74,5 +79,41 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted']);
+    }
+
+    public function bulkActivate(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        $count = User::whereIn('id', $request->input('ids'))
+            ->whereDoesntHave('role', fn($q) => $q->where('slug', 'customer'))
+            ->update(['status' => 'active']);
+        return response()->json(['message' => "{$count} user(s) activated", 'count' => $count]);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        $count = User::whereIn('id', $request->input('ids'))
+            ->whereDoesntHave('role', fn($q) => $q->where('slug', 'customer'))
+            ->update(['status' => 'inactive']);
+        return response()->json(['message' => "{$count} user(s) deactivated", 'count' => $count]);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        $count = User::whereIn('id', $request->input('ids'))
+            ->whereDoesntHave('role', fn($q) => $q->where('slug', 'customer'))
+            ->delete();
+        return response()->json(['message' => "{$count} user(s) deleted", 'count' => $count]);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(User::class, $request,
+            ['id', 'name', 'email', 'phone', 'status', 'created_at'],
+            ['ID', 'Name', 'Email', 'Phone', 'Status', 'Created At'],
+            'users.csv'
+        );
     }
 }

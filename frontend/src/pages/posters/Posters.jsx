@@ -4,9 +4,27 @@ import { fetchFrameLayers, createFrameLayer, updateFrameLayer, deleteFrameLayer,
 import { fetchCategories, fetchCategoriesFlat } from '../../features/categories/categorySlice';
 import { fetchFrames } from '../../features/frames/frameSlice';
 import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
+import axiosInstance from '../../api/axios';
+import AdvancedFilters from '../../components/AdvancedFilters';
+import PaginationShared from '../../components/Pagination';
 
-const STORAGE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') + '/storage/';
+const STORAGE_URL = (import.meta.env.VITE_API_URL?.replace('/api', '') || '') + '/storage/';
 const LANGUAGES = ['Hindi', 'English', 'Marathi'];
+
+/* ──────────── Image with fallback placeholder ──────────── */
+function ImageWithFallback({ src, alt, className, fallbackClassName }) {
+    const [failed, setFailed] = useState(false);
+    if (failed || !src) {
+        return (
+            <div className={fallbackClassName || 'w-14 h-14 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center'}>
+                <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                </svg>
+            </div>
+        );
+    }
+    return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
+}
 const PARAM_TYPES = [
     { value: 'photo', label: 'Photo Upload' },
     { value: 'text', label: 'Text Field' },
@@ -404,7 +422,12 @@ function PreviewModal({ layer, onClose }) {
                 <div className="p-6 bg-gray-50/50">
                     {/* Layer image with dynamic parameter overlays */}
                     <div className="relative inline-block mx-auto w-full">
-                        <img src={STORAGE_URL + layer.file_path} alt={layer.title} className="w-full max-h-[55vh] object-contain rounded-lg shadow-md mx-auto block" />
+                        <ImageWithFallback
+                            src={layer.file_path ? STORAGE_URL + layer.file_path : null}
+                            alt={layer.title}
+                            className="w-full max-h-[55vh] object-contain rounded-lg shadow-md mx-auto block"
+                            fallbackClassName="w-48 h-48 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center mx-auto"
+                        />
                         {/* Dynamic overlays — photo as image placeholder, text as text overlay */}
                         {params.map((p, idx) => (
                             <div key={idx}
@@ -468,43 +491,8 @@ function DeleteModal({ layer, onClose, onConfirm }) {
                 <p className="text-sm text-gray-500 text-center mt-2">Are you sure you want to delete <span className="font-semibold text-gray-700">{layer.title}</span>? This action cannot be undone.</p>
                 <div className="flex gap-3 mt-6">
                     <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-                    <button onClick={() => { onConfirm(layer.id); onClose(); }} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Delete</button>
+                    <button onClick={() => onConfirm(layer.id)} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors">Delete</button>
                 </div>
-            </div>
-        </div>
-    );
-}
-
-/* ──────────── Pagination ──────────── */
-function Pagination({ current, last, total, onChange }) {
-    if (last <= 1) return null;
-    const pages = [];
-    const delta = 2;
-    for (let i = 1; i <= last; i++) {
-        if (i === 1 || i === last || (i >= current - delta && i <= current + delta)) pages.push(i);
-        else if (pages[pages.length - 1] !== '...') pages.push('...');
-    }
-    const btnBase = 'h-9 min-w-[36px] flex items-center justify-center rounded-lg text-sm font-medium transition-all';
-    return (
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-400">{total} total frame layers</p>
-            <div className="flex items-center gap-1">
-                <button onClick={() => onChange(current - 1)} disabled={current <= 1}
-                    className={`${btnBase} px-3 gap-1 ${current <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                    <span className="hidden sm:inline">Previous</span>
-                </button>
-                {pages.map((p, i) =>
-                    p === '...' ? <span key={`dot-${i}`} className="w-9 h-9 flex items-center justify-center text-gray-400 text-sm">...</span> : (
-                        <button key={p} onClick={() => onChange(p)}
-                            className={`${btnBase} ${p === current ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}>{p}</button>
-                    )
-                )}
-                <button onClick={() => onChange(current + 1)} disabled={current >= last}
-                    className={`${btnBase} px-3 gap-1 ${current >= last ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}`}>
-                    <span className="hidden sm:inline">Next</span>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                </button>
             </div>
         </div>
     );
@@ -525,8 +513,14 @@ export default function Posters() {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [frameFilter, setFrameFilter] = useState('');
     const [languageFilter, setLanguageFilter] = useState('');
-    const [searchTimeout, setSearchTimeout] = useState(null);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+
+    // Build frame options for filter dropdown
+    const frameOptions = allFrames.map(f => ({ value: String(f.id), label: f.title }));
 
     const loadLayers = useCallback((params = {}) => {
         dispatch(fetchFrameLayers({
@@ -534,9 +528,13 @@ export default function Posters() {
             search: params.search ?? search,
             category_id: (params.category_id ?? categoryFilter) || undefined,
             language: (params.language ?? languageFilter) || undefined,
+            status: (params.status ?? statusFilter) || undefined,
+            frame_id: (params.frame_id ?? frameFilter) || undefined,
+            date_from: params.date_from ?? dateFrom,
+            date_to: params.date_to ?? dateTo,
             per_page: 12,
         }));
-    }, [dispatch, search, categoryFilter, languageFilter]);
+    }, [dispatch, search, categoryFilter, languageFilter, statusFilter, frameFilter, dateFrom, dateTo]);
 
     useEffect(() => {
         dispatch(fetchCategories());
@@ -544,12 +542,39 @@ export default function Posters() {
         dispatch(fetchFrames({ per_page: 1000 }));
     }, [dispatch]);
 
-    useEffect(() => { loadLayers({ page: 1 }); }, [categoryFilter, languageFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { loadLayers({ page: 1 }); }, [categoryFilter, languageFilter, statusFilter, frameFilter, dateFrom, dateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSearchChange = (val) => {
         setSearch(val);
-        if (searchTimeout) clearTimeout(searchTimeout);
-        setSearchTimeout(setTimeout(() => loadLayers({ page: 1, search: val }), 400));
+        loadLayers({ page: 1, search: val });
+    };
+
+    // Build category options for AdvancedFilters dropdown (with hierarchy)
+    const categoryOptions = categories.map(c => ({
+        value: String(c.id),
+        label: (c.depth > 0 ? '\u00A0\u00A0'.repeat(c.depth) + '└ ' : '') + c.name,
+    }));
+
+    const handleFilterChange = (key, value) => {
+        if (key === 'category') setCategoryFilter(value);
+        if (key === 'status') setStatusFilter(value);
+        if (key === 'frame') setFrameFilter(value);
+    };
+
+    const handleDateChange = (key, value) => {
+        if (key === 'date_from') setDateFrom(value);
+        if (key === 'date_to') setDateTo(value);
+    };
+
+    const handleReset = () => {
+        setSearch('');
+        setCategoryFilter('');
+        setStatusFilter('');
+        setFrameFilter('');
+        setLanguageFilter('');
+        setDateFrom('');
+        setDateTo('');
+        dispatch(fetchFrameLayers({ page: 1, per_page: 12 }));
     };
 
     const handleSave = async (data) => {
@@ -562,10 +587,9 @@ export default function Posters() {
     };
 
     const handleDelete = async (id) => {
-        const confirmed = await alertConfirmDelete('this frame layer');
-        if (!confirmed) return;
         const result = await dispatch(deleteFrameLayer(id));
         if (result.error) return alertError('Delete Failed', result.payload);
+        setDeleteTarget(null);
         loadLayers({ page: pagination.current_page });
         alertSuccess('Frame Layer Deleted');
     };
@@ -574,14 +598,21 @@ export default function Posters() {
         await dispatch(toggleFrameLayer(id));
     };
 
-    const handleDownload = (layer) => {
-        const link = document.createElement('a');
-        link.href = STORAGE_URL + layer.file_path;
-        link.download = layer.file_name;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleDownload = async (layer) => {
+        if (!layer.file_path) return alertError('Download Failed', 'No file available for this layer');
+        try {
+            const res = await axiosInstance.get(`/frame-layers/${layer.id}/download`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = layer.file_name || layer.file_path.split('/').pop() || 'frame-layer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch {
+            alertError('Download Failed', 'Could not download the file');
+        }
     };
 
     return (
@@ -610,35 +641,40 @@ export default function Posters() {
                 </div>
             )}
 
-            {/* ── Search & Filter bar ── */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                {/* Search */}
-                <div className="relative flex-1 max-w-sm">
-                    <svg className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                    <input type="text" value={search} onChange={e => handleSearchChange(e.target.value)}
-                        placeholder="Search frame layers..."
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 transition-all" />
-                </div>
-
-                {/* Category searchable select */}
-                <div className="min-w-[220px]">
-                    <SearchableSelect
-                        value={categoryFilter}
-                        onChange={setCategoryFilter}
-                        options={categories}
-                        placeholder="All Categories"
-                        searchPlaceholder="Search categories..."
-                        allowClear
-                    />
-                </div>
-
-                {/* Language */}
-                <select value={languageFilter} onChange={e => setLanguageFilter(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 transition-all min-w-[150px]">
-                    <option value="">All Languages</option>
-                    {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
-            </div>
+            {/* Advanced Filters */}
+            <AdvancedFilters
+                search={search}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search frame layers..."
+                filters={[
+                    {
+                        key: 'category',
+                        label: 'All Categories',
+                        value: categoryFilter,
+                        options: categoryOptions,
+                    },
+                    {
+                        key: 'status',
+                        label: 'All Status',
+                        value: statusFilter,
+                        options: [
+                            { value: 'active', label: 'Active' },
+                            { value: 'inactive', label: 'Inactive' },
+                        ],
+                    },
+                    {
+                        key: 'frame',
+                        label: 'All Frames',
+                        value: frameFilter,
+                        options: frameOptions,
+                    },
+                ]}
+                onFilterChange={handleFilterChange}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateChange={handleDateChange}
+                onReset={handleReset}
+            />
 
             {/* ── Table ── */}
             {loading ? (
@@ -672,7 +708,7 @@ export default function Posters() {
                                     const params = layer.parameters || [];
                                     const translationLangs = (layer.translations || []).map(t => t.language);
                                     return (
-                                        <tr key={layer.id} className="group hover:bg-gray-50/50 transition-colors">
+                                        <tr key={layer.id} className="group hover:bg-gray-50/60 transition-colors">
                                             {/* Frame Title */}
                                             <td className="px-5 py-3.5">
                                                 <div>
@@ -703,8 +739,11 @@ export default function Posters() {
                                             {/* Preview */}
                                             <td className="px-5 py-3.5">
                                                 <button onClick={() => setPreviewTarget(layer)} className="block">
-                                                    <img src={STORAGE_URL + layer.file_path} alt={layer.title}
-                                                        className="w-14 h-14 object-cover rounded-lg border border-gray-100 shadow-sm hover:shadow-md hover:scale-105 transition-all" />
+                                                    <ImageWithFallback
+                                                        src={layer.file_path ? STORAGE_URL + layer.file_path : null}
+                                                        alt={layer.title}
+                                                        className="w-14 h-14 object-cover rounded-lg border border-gray-100 shadow-sm hover:shadow-md hover:scale-105 transition-all"
+                                                    />
                                                 </button>
                                             </td>
                                             {/* Parameters */}
@@ -744,22 +783,22 @@ export default function Posters() {
                                                 <div className="flex items-center justify-end gap-1 transition-opacity">
                                                     {/* View */}
                                                     <button onClick={() => setPreviewTarget(layer)} title="View"
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors">
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                                     </button>
                                                     {/* Edit */}
                                                     <button onClick={() => setModal(layer)} title="Edit"
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-amber-500 hover:text-amber-700 hover:bg-amber-50 transition-colors">
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
                                                     </button>
                                                     {/* Download */}
                                                     <button onClick={() => handleDownload(layer)} title="Download"
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors">
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                                                     </button>
                                                     {/* Delete */}
                                                     <button onClick={() => setDeleteTarget(layer)} title="Delete"
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors">
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                                     </button>
                                                 </div>
@@ -770,9 +809,10 @@ export default function Posters() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="px-5 py-3">
-                        <Pagination current={pagination.current_page} last={pagination.last_page} total={pagination.total} onChange={(page) => loadLayers({ page })} />
-                    </div>
+                    {/* Pagination */}
+                    {!loading && layers.length > 0 && (
+                        <PaginationShared pagination={pagination} onPageChange={(page) => loadLayers({ page })} itemLabel="frame layers" />
+                    )}
                 </div>
             )}
 
@@ -788,6 +828,7 @@ export default function Posters() {
             )}
             {previewTarget && <PreviewModal layer={previewTarget} onClose={() => setPreviewTarget(null)} />}
             {deleteTarget && <DeleteModal layer={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />}
+
         </div>
     );
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerRegistrationController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\FcmTokenController;
 use App\Http\Controllers\Api\MobileSubscriptionController;
 use App\Http\Controllers\Api\NavigationController;
 use App\Http\Controllers\Api\PaymentController;
@@ -17,7 +18,10 @@ use App\Http\Controllers\Api\FrameLayerController;
 use App\Http\Controllers\Api\FrameRequestController;
 use App\Http\Controllers\Api\ReminderController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\AdminNotificationController;
+use App\Http\Controllers\Api\NotificationPreferenceController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UserNotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -50,6 +54,22 @@ Route::middleware('auth:sanctum')->group(function () {
     // Mobile: Today's priority content
     Route::get('/mobile/reminders/today', [ReminderController::class, 'todayPriority']);
 
+    // FCM Token Management
+    Route::post('/fcm-token', [FcmTokenController::class, 'store']);
+    Route::post('/fcm-token/remove', [FcmTokenController::class, 'destroy']);
+
+    // User Notifications (mobile app — per-user delivered notifications)
+    Route::get('/my/notifications', [UserNotificationController::class, 'index']);
+    Route::post('/my/notifications/mark-read/{id}', [UserNotificationController::class, 'markRead']);
+    Route::post('/my/notifications/mark-all-read', [UserNotificationController::class, 'markAllRead']);
+    Route::delete('/my/notifications/{id}', [UserNotificationController::class, 'destroy']);
+    Route::delete('/my/notifications', [UserNotificationController::class, 'clearAll']);
+    Route::get('/my/notifications/unread-count', [UserNotificationController::class, 'unreadCount']);
+
+    // Notification Preferences
+    Route::get('/notifications/preferences', [NotificationPreferenceController::class, 'show']);
+    Route::put('/notifications/preferences', [NotificationPreferenceController::class, 'update']);
+
     // Customer Frame Requests (for mobile app / customer)
     Route::get('/my/frame-requests', [FrameRequestController::class, 'customerIndex']);
     Route::post('/my/frame-requests', [FrameRequestController::class, 'customerStore']);
@@ -57,6 +77,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Packages (public list for all authenticated users)
     Route::get('/packages', [SubscriptionPackageController::class , 'index']);
+
+    // Categories & Frames (public list for all authenticated users — used by mobile app)
+    Route::get('/mobile/categories', [CategoryController::class, 'mobileIndex']);
+    Route::get('/mobile/frames', [CategoryController::class, 'mobileFrames']);
 
     // Packages Management (Super Admin + Admin)
     Route::middleware('role:super_admin,admin')->group(function () {
@@ -143,5 +167,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('role:super_admin,admin')->group(function () {
             Route::apiResource('reminders', ReminderController::class);
             Route::patch('/reminders/{reminder}/toggle', [ReminderController::class, 'toggleActive']);
+        });
+
+        // Admin Notifications (Super Admin + Admin)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::apiResource('notifications', AdminNotificationController::class);
+            Route::patch('/notifications/{notification}/send', [AdminNotificationController::class, 'send']);
+            Route::post('/notifications/bulk-delete', [AdminNotificationController::class, 'bulkDelete']);
+            Route::post('/notifications/export', [AdminNotificationController::class, 'export']);
         });
     });

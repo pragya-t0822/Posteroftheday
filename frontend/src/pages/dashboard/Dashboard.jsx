@@ -24,7 +24,18 @@ export default function Dashboard() {
             color: 'bg-blue-500',
             value: stats?.total_users ?? '—',
             label: 'Total Users',
-            desc: 'Registered accounts',
+            desc: 'Registered customers',
+        },
+        {
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                </svg>
+            ),
+            color: 'bg-emerald-500',
+            value: stats?.active_memberships ?? '—',
+            label: 'Active Memberships',
+            desc: 'Currently subscribed users',
         },
         {
             icon: (
@@ -48,17 +59,6 @@ export default function Dashboard() {
             label: 'Permissions',
             desc: 'Granular controls',
         },
-        {
-            icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                </svg>
-            ),
-            color: 'bg-teal-500',
-            value: stats?.active_sessions ?? '—',
-            label: 'Active Session',
-            desc: 'Currently signed in',
-        },
     ];
 
     return (
@@ -67,7 +67,7 @@ export default function Dashboard() {
             <div className="flex items-start justify-between">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-                        Good {greeting}, {firstName} <span className="inline-block ml-1">👋</span>
+                        Good {greeting}, {firstName}
                     </h2>
                     <p className="text-gray-500 mt-1">Welcome back to Poster of the Day admin panel.</p>
                 </div>
@@ -90,34 +90,6 @@ export default function Dashboard() {
                 ))}
             </div>
 
-            {/* Signed in as */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-4">Signed in as</p>
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shrink-0">
-                        <span className="text-white text-sm font-bold">
-                            {user?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                        </span>
-                    </div>
-                    <div>
-                        <p className="text-base font-semibold text-gray-900">{user?.name}</p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Info card */}
-            <div className="bg-gray-900 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                    </svg>
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Dynamic Navigation</p>
-                </div>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                    Your sidebar is rendered from <code className="px-1.5 py-0.5 rounded bg-white/10 text-gray-200 text-xs font-mono">GET /api/navigation</code> and reflects only the sections your role has access to. Super Admins see everything — Staff and Customers only see Dashboard.
-                </p>
-            </div>
         </div>
     );
 }

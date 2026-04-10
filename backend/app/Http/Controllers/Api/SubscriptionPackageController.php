@@ -4,15 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPackage;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 
 class SubscriptionPackageController extends Controller
 {
-    public function index()
+    use HasAdvancedFiltering;
+
+    public function index(Request $request)
     {
-        return response()->json(
-            SubscriptionPackage::orderBy('sort_order')->orderBy('price')->get()
-        );
+        $query = SubscriptionPackage::orderBy('sort_order')->orderBy('price');
+
+        $this->applySearch($query, $request, ['name']);
+        $this->applyFilters($query, $request, ['is_active' => 'is_active']);
+        $this->applyDateRange($query, $request);
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -78,5 +85,29 @@ class SubscriptionPackageController extends Controller
         $subscriptionPackage->update(['is_active' => !$subscriptionPackage->is_active]);
 
         return response()->json($subscriptionPackage);
+    }
+
+    public function bulkActivate(Request $request)
+    {
+        return $this->bulkUpdateField(SubscriptionPackage::class, $request, 'is_active', true);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        return $this->bulkUpdateField(SubscriptionPackage::class, $request, 'is_active', false);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(SubscriptionPackage::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(SubscriptionPackage::class, $request,
+            ['id', 'name', 'price', 'duration_type', 'duration_days', 'is_active', 'created_at'],
+            ['ID', 'Name', 'Price', 'Duration Type', 'Duration Days', 'Active', 'Created At'],
+            'subscription-packages.csv'
+        );
     }
 }

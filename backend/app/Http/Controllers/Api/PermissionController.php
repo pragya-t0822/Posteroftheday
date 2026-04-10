@@ -4,13 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
+use App\Traits\HasAdvancedFiltering;
 use Illuminate\Http\Request;
 
 class PermissionController extends Controller
 {
-    public function index()
+    use HasAdvancedFiltering;
+
+    public function index(Request $request)
     {
-        return response()->json(Permission::orderBy('module')->get());
+        $query = Permission::orderBy('module');
+
+        $this->applySearch($query, $request, ['name', 'slug']);
+        $this->applyDateRange($query, $request);
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
@@ -51,5 +59,19 @@ class PermissionController extends Controller
         $permission->delete();
 
         return response()->json(['message' => 'Permission deleted']);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return $this->bulkDestroy(Permission::class, $request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->exportCsv(Permission::class, $request,
+            ['id', 'name', 'slug', 'module', 'created_at'],
+            ['ID', 'Name', 'Slug', 'Module', 'Created At'],
+            'permissions.csv'
+        );
     }
 }

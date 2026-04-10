@@ -42,7 +42,7 @@ export default function ReminderForm() {
                 setForm({
                     title: existing.title || '',
                     occasion: existing.occasion || '',
-                    reminder_date: existing.reminder_date || '',
+                    reminder_date: existing.reminder_date ? existing.reminder_date.slice(0, 10) : '',
                     description: existing.description || '',
                     category_ids: existing.category_ids || [],
                     is_active: existing.is_active !== undefined ? existing.is_active : true,
@@ -59,11 +59,26 @@ export default function ReminderForm() {
         }));
     };
 
+    const [errors, setErrors] = useState({});
+
+    const validate = () => {
+        const errs = {};
+        if (!form.title.trim()) errs.title = 'Title is required';
+        else if (form.title.trim().length > 255) errs.title = 'Title must be 255 characters or less';
+        if (!form.reminder_date) errs.reminder_date = 'Date is required';
+        if (form.occasion && form.occasion.length > 255) errs.occasion = 'Occasion must be 255 characters or less';
+        if (form.description && form.description.length > 2000) errs.description = 'Description must be 2000 characters or less';
+        if (form.category_ids.length === 0) errs.category_ids = 'Select at least one category';
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        if (!validate()) return alertError('Validation Error', 'Please fix the highlighted fields');
         setSaving(true);
         const data = {
-            title: form.title, occasion: form.occasion, reminder_date: form.reminder_date,
+            title: form.title.trim(), occasion: form.occasion, reminder_date: form.reminder_date,
             description: form.description, category_ids: form.category_ids,
             is_active: form.is_active ? 1 : 0,
         };
@@ -204,19 +219,23 @@ export default function ReminderForm() {
                         </h3>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Title <span className="text-red-400">*</span></label>
-                            <input type="text" value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} placeholder="e.g., Diwali Special Posters" required />
+                            <input type="text" value={form.title} onChange={e => { set('title', e.target.value); setErrors(er => ({ ...er, title: undefined })); }} className={`${inputCls} ${errors.title ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="e.g., Diwali Special Posters" />
+                            {errors.title && <p className="text-[11px] text-red-500 mt-1">{errors.title}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Occasion</label>
-                            <input type="text" value={form.occasion} onChange={e => set('occasion', e.target.value)} className={inputCls} placeholder="e.g., Diwali, New Year" />
+                            <input type="text" value={form.occasion} onChange={e => { set('occasion', e.target.value); setErrors(er => ({ ...er, occasion: undefined })); }} className={`${inputCls} ${errors.occasion ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} placeholder="e.g., Diwali, New Year" />
+                            {errors.occasion && <p className="text-[11px] text-red-500 mt-1">{errors.occasion}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Date <span className="text-red-400">*</span></label>
-                            <input type="date" value={form.reminder_date} onChange={e => set('reminder_date', e.target.value)} className={inputCls} required />
+                            <input type="date" value={form.reminder_date} onChange={e => { set('reminder_date', e.target.value); setErrors(er => ({ ...er, reminder_date: undefined })); }} className={`${inputCls} ${errors.reminder_date ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} />
+                            {errors.reminder_date && <p className="text-[11px] text-red-500 mt-1">{errors.reminder_date}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
-                            <textarea value={form.description} onChange={e => set('description', e.target.value)} className={inputCls + ' resize-none'} rows={2} placeholder="Optional notes..." />
+                            <textarea value={form.description} onChange={e => { set('description', e.target.value); setErrors(er => ({ ...er, description: undefined })); }} className={`${inputCls} resize-none ${errors.description ? 'border-red-400 ring-2 ring-red-400/10' : ''}`} rows={2} placeholder="Optional notes..." />
+                            {errors.description && <p className="text-[11px] text-red-500 mt-1">{errors.description}</p>}
                         </div>
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                             <div>
@@ -241,7 +260,7 @@ export default function ReminderForm() {
                         {selectedCategories.length === 0 ? (
                             <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                                 <svg className="w-10 h-10 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
-                                <p className="text-xs text-gray-400">Select categories to preview</p>
+                                <p className={`text-xs ${errors.category_ids ? 'text-red-500 font-medium' : 'text-gray-400'}`}>{errors.category_ids || 'Select categories to preview'}</p>
                             </div>
                         ) : (
                             <div className="space-y-2">

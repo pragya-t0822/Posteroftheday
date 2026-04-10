@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'api_url' => env('WHATSAPP_API_URL', 'https://wts.innoverinfotech.com/api/sendText'),
+        'token' => env('WHATSAPP_API_TOKEN'),
+    ],
+
 ];

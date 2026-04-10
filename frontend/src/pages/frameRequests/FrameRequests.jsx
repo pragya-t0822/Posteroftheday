@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchFrameRequests, updateFrameRequest, deleteFrameRequest } from '../../features/frameRequests/frameRequestSlice';
 import { alertSuccess, alertError, alertConfirmDelete } from '../../utils/alert';
+import AdvancedFilters from '../../components/AdvancedFilters';
+import PaginationShared from '../../components/Pagination';
 
 const STORAGE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') + '/storage/';
 
@@ -223,65 +225,6 @@ function ProcessModal({ request, onClose, onSave }) {
     );
 }
 
-/* ──────────── Pagination ──────────── */
-function Pagination({ pagination, onPageChange }) {
-    const { current_page, last_page, total, per_page } = pagination;
-    if (last_page <= 1) return null;
-
-    const from = (current_page - 1) * per_page + 1;
-    const to = Math.min(current_page * per_page, total);
-
-    const pages = [];
-    for (let i = 1; i <= last_page; i++) {
-        if (i === 1 || i === last_page || (i >= current_page - 1 && i <= current_page + 1)) {
-            pages.push(i);
-        } else if (pages[pages.length - 1] !== '...') {
-            pages.push('...');
-        }
-    }
-
-    return (
-        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
-            <p className="text-xs text-gray-400">
-                Showing <span className="font-semibold text-gray-600">{from}</span> to <span className="font-semibold text-gray-600">{to}</span> of <span className="font-semibold text-gray-600">{total}</span> requests
-            </p>
-            <div className="flex items-center gap-1">
-                <button
-                    onClick={() => onPageChange(current_page - 1)}
-                    disabled={current_page === 1}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Previous
-                </button>
-                {pages.map((page, idx) =>
-                    page === '...' ? (
-                        <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-xs text-gray-400">...</span>
-                    ) : (
-                        <button
-                            key={page}
-                            onClick={() => onPageChange(page)}
-                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                                page === current_page
-                                    ? 'bg-gray-900 text-white'
-                                    : 'text-gray-500 hover:bg-gray-100'
-                            }`}
-                        >
-                            {page}
-                        </button>
-                    )
-                )}
-                <button
-                    onClick={() => onPageChange(current_page + 1)}
-                    disabled={current_page === last_page}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Next
-                </button>
-            </div>
-        </div>
-    );
-}
-
 /* ──────────── Main Page ──────────── */
 export default function FrameRequests() {
     const dispatch = useDispatch();
@@ -289,27 +232,43 @@ export default function FrameRequests() {
     const [processTarget, setProcessTarget] = useState(null);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    const [searchTimeout, setSearchTimeout] = useState(null);
-
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const loadRequests = useCallback((params = {}) => {
         dispatch(fetchFrameRequests({
             page: params.page || 1,
             search: params.search ?? search,
             status: params.status ?? statusFilter,
+            date_from: params.date_from ?? dateFrom,
+            date_to: params.date_to ?? dateTo,
             per_page: 10,
         }));
-    }, [dispatch, search, statusFilter]);
+    }, [dispatch, search, statusFilter, dateFrom, dateTo]);
 
     useEffect(() => {
         loadRequests({ page: 1 });
-    }, [statusFilter]);
+    }, [statusFilter, dateFrom, dateTo]);
 
     const handleSearchChange = (value) => {
         setSearch(value);
-        if (searchTimeout) clearTimeout(searchTimeout);
-        setSearchTimeout(setTimeout(() => {
-            loadRequests({ page: 1, search: value });
-        }, 400));
+        loadRequests({ page: 1, search: value });
+    };
+
+    const handleFilterChange = (key, value) => {
+        if (key === 'status') setStatusFilter(value);
+    };
+
+    const handleDateChange = (key, value) => {
+        if (key === 'date_from') setDateFrom(value);
+        if (key === 'date_to') setDateTo(value);
+    };
+
+    const handleReset = () => {
+        setSearch('');
+        setStatusFilter('');
+        setDateFrom('');
+        setDateTo('');
+        dispatch(fetchFrameRequests({ page: 1, per_page: 10 }));
     };
 
     const handlePageChange = (page) => {
@@ -345,34 +304,30 @@ export default function FrameRequests() {
                 </div>
             </div>
 
-            {/* Search + Filter Bar */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                        </svg>
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={e => handleSearchChange(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-all"
-                            placeholder="Search by title or customer name..."
-                        />
-                    </div>
-                    <select
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 outline-none focus:bg-white focus:border-gray-900 focus:ring-1 focus:ring-gray-900 transition-all"
-                    >
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                </div>
-            </div>
+            {/* Advanced Filters */}
+            <AdvancedFilters
+                search={search}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Search by title or customer name..."
+                filters={[
+                    {
+                        key: 'status',
+                        label: 'All Status',
+                        value: statusFilter,
+                        options: [
+                            { value: 'pending', label: 'Pending' },
+                            { value: 'in_progress', label: 'In Progress' },
+                            { value: 'completed', label: 'Completed' },
+                            { value: 'rejected', label: 'Rejected' },
+                        ],
+                    },
+                ]}
+                onFilterChange={handleFilterChange}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateChange={handleDateChange}
+                onReset={handleReset}
+            />
 
             {/* Requests Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -460,7 +415,7 @@ export default function FrameRequests() {
                                             {/* View/Process */}
                                             <button
                                                 onClick={() => setProcessTarget(r)}
-                                                className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
+                                                className="p-2 rounded-lg hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition-colors"
                                                 title="View / Process"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -471,7 +426,7 @@ export default function FrameRequests() {
                                             {/* Delete */}
                                             <button
                                                 onClick={() => handleDelete(r.id)}
-                                                className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                                className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors"
                                                 title="Delete"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -488,7 +443,7 @@ export default function FrameRequests() {
 
                 {/* Pagination */}
                 {!loading && requests.length > 0 && (
-                    <Pagination pagination={pagination} onPageChange={handlePageChange} />
+                    <PaginationShared pagination={pagination} onPageChange={handlePageChange} itemLabel="requests" />
                 )}
             </div>
 
@@ -500,6 +455,7 @@ export default function FrameRequests() {
                     onSave={handleProcess}
                 />
             )}
+
         </div>
     );
 }

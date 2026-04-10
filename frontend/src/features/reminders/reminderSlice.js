@@ -46,6 +46,30 @@ export const toggleReminder = createAsyncThunk('reminders/toggle', async (id, { 
     }
 });
 
+export const bulkActivateReminders = createAsyncThunk('reminders/bulkActivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/reminders/bulk-activate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeactivateReminders = createAsyncThunk('reminders/bulkDeactivate', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/reminders/bulk-deactivate', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const bulkDeleteReminders = createAsyncThunk('reminders/bulkDelete', async (ids, { rejectWithValue }) => {
+    try { const r = await axios.post('/reminders/bulk-delete', { ids }); return r.data; } catch (e) { return rejectWithValue(e.response?.data?.message || 'Failed'); }
+});
+export const exportReminders = createAsyncThunk('reminders/export', async (ids, { rejectWithValue }) => {
+    try {
+        const r = await axios.post('/reminders/export', { ids }, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([r.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'reminders.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        return { success: true };
+    } catch (e) { return rejectWithValue('Export failed'); }
+});
+
 const reminderSlice = createSlice({
     name: 'reminders',
     initialState: {

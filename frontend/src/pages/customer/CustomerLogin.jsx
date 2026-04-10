@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { customerLogin, clearError } from '../../features/auth/authSlice';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Logo from '../../components/Logo';
 
 export default function CustomerLogin() {
@@ -9,7 +9,9 @@ export default function CustomerLogin() {
     const [password, setPassword] = useState('');
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const { loading, error } = useSelector((state) => state.auth);
+    const passwordReset = location.state?.passwordReset;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,16 +24,25 @@ export default function CustomerLogin() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-rose-50 via-white to-orange-50">
+            {/* Header Navigation Tabs */}
+            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+                <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <Logo size={30} />
+                        <span className="text-sm font-bold text-gray-900">Poster of the Day</span>
+                    </div>
+                    <span className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-500 text-white shadow-sm">
+                        Customer Login
+                    </span>
+                </div>
+            </nav>
+
             <div className="flex-1 flex items-center justify-center px-4 py-12">
                 <div className="w-full max-w-sm space-y-6">
 
-                    {/* Logo + Heading */}
+                    {/* Heading */}
                     <div className="flex flex-col items-center text-center">
-                        <div className="mb-5">
-                            <Logo size={72} />
-                        </div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h1>
-                        <p className="text-sm text-gray-400 mt-1.5">Sign in to your customer account</p>
+                        <p className="text-sm text-gray-400">Sign in to your customer account</p>
                     </div>
 
                     {/* Error */}
@@ -41,6 +52,16 @@ export default function CustomerLogin() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                             </svg>
                             {error}
+                        </div>
+                    )}
+
+                    {/* Password reset success */}
+                    {passwordReset && (
+                        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-600">
+                            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            Password reset successfully. Sign in with your new password.
                         </div>
                     )}
 
@@ -61,9 +82,9 @@ export default function CustomerLogin() {
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
                                     <label className="block text-sm font-medium text-gray-700">Password</label>
-                                    <button type="button" onClick={() => alert('Forgot password feature coming soon!')} className="text-xs text-rose-500 hover:text-rose-600 font-medium transition-colors">
+                                    <Link to="/customer/forgot-password" className="text-xs text-rose-500 hover:text-rose-600 font-medium transition-colors">
                                         Forgot Password?
-                                    </button>
+                                    </Link>
                                 </div>
                                 <input
                                     type="password"
@@ -102,19 +123,11 @@ export default function CustomerLogin() {
                         </p>
                     </div>
 
-                    {/* Admin link */}
-                    <p className="text-center text-xs text-gray-400">
-                        Admin?{' '}
-                        <Link to="/login" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                            Go to Admin Login
-                        </Link>
-                    </p>
-
                 </div>
             </div>
             <footer className="py-4 text-center">
                 <p className="text-[11px] text-gray-400">
-                    Developed by{' '}
+                    Developed by Innover Infotech ·{' '}
                     <a href="https://www.innoverinfotech.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-rose-500 font-semibold transition-colors">
                         Innover Infotech Pvt. Ltd.
                     </a>

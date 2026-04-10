@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../../features/auth/authSlice';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Logo from '../../components/Logo';
 
 const demoAccounts = [
     { role: 'Super Admin', email: 'superadmin@posteroftheday.com', color: 'bg-rose-500' },
     { role: 'Admin', email: 'admin@posteroftheday.com', color: 'bg-indigo-500' },
     { role: 'Staff', email: 'staff@posteroftheday.com', color: 'bg-emerald-500' },
-    { role: 'Customer', email: 'customer@posteroftheday.com', color: 'bg-gray-500' },
 ];
 
 export default function Login() {
@@ -34,16 +33,25 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-100">
+            {/* Header Navigation Tabs */}
+            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+                <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <Logo size={30} />
+                        <span className="text-sm font-bold text-gray-900">Poster of the Day</span>
+                    </div>
+                    <span className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 text-white">
+                        Admin Panel
+                    </span>
+                </div>
+            </nav>
+
             <div className="flex-1 flex items-center justify-center px-4 py-12">
             <div className="w-full max-w-sm space-y-6">
 
-                {/* Logo + Heading */}
+                {/* Heading */}
                 <div className="flex flex-col items-center text-center">
-                    <div className="mb-5">
-                        <Logo size={72} />
-                    </div>
-                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Poster of the Day</h1>
-                    <p className="text-sm text-gray-400 mt-1.5">Sign in to continue</p>
+                    <p className="text-sm text-gray-400">Admin sign in</p>
                 </div>
 
                 {/* Error */}
@@ -123,19 +131,12 @@ export default function Login() {
                     </div>
                 </div>
 
-                {/* Footer link */}
-                <p className="text-center text-xs text-gray-400">
-                    Customer?{' '}
-                    <Link to="/customer/login" className="text-rose-500 hover:text-rose-600 font-medium transition-colors">
-                        Go to Customer Login
-                    </Link>
-                </p>
 
             </div>
             </div>
             <footer className="py-4 text-center">
                 <p className="text-[11px] text-gray-400">
-                    Developed by{' '}
+                    Developed by Innover Infotech ·{' '}
                     <a
                         href="https://www.innoverinfotech.com"
                         target="_blank"
