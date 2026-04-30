@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CustomerRegistrationController;
+use App\Http\Controllers\Api\OtpVerificationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FcmTokenController;
 use App\Http\Controllers\Api\MobileSubscriptionController;
@@ -32,6 +33,12 @@ Route::post('/login', [AuthController::class , 'login']);
 Route::post('/customer/register', [CustomerRegistrationController::class , 'register']);
 Route::get('/customer/packages', [CustomerRegistrationController::class , 'packages']);
 Route::post('/customer/login', [AuthController::class, 'customerLogin']);
+
+// Customer OTP (registration & login)
+Route::post('/customer/send-otp', [OtpVerificationController::class, 'sendOtp']);
+Route::post('/customer/verify-otp', [OtpVerificationController::class, 'verifyOtp']);
+Route::post('/customer/send-login-otp', [OtpVerificationController::class, 'sendLoginOtp']);
+Route::post('/customer/verify-login-otp', [OtpVerificationController::class, 'verifyLoginOtp']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
