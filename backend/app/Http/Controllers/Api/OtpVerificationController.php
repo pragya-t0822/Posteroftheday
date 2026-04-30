@@ -137,6 +137,30 @@ class OtpVerificationController extends Controller
     }
 
     /**
+     * Normalize phone: strips +91 or 91 prefix, returns 10-digit number.
+     * Also returns the original for fallback matching.
+     */
+    private function resolveUser(string $phone): ?User
+    {
+        // Try exact match first
+        $user = User::whereHas('role', fn ($q) => $q->where('slug', 'customer'))
+            ->where('phone', $phone)
+            ->first();
+
+        if ($user) return $user;
+
+        // Try stripping country code variants: +91XXXXXXXXXX or 91XXXXXXXXXX → XXXXXXXXXX
+        $stripped = preg_replace('/^(\+91|91)/', '', $phone);
+        if ($stripped !== $phone) {
+            $user = User::whereHas('role', fn ($q) => $q->where('slug', 'customer'))
+                ->where('phone', $stripped)
+                ->first();
+        }
+
+        return $user;
+    }
+
+    /**
      * Send OTP for login — phone must be registered.
      */
     public function sendLoginOtp(Request $request)
@@ -147,10 +171,8 @@ class OtpVerificationController extends Controller
 
         $phone = $request->phone;
 
-        // Check if phone is registered as a customer
-        $user = User::whereHas('role', fn ($q) => $q->where('slug', 'customer'))
-            ->where('phone', $phone)
-            ->first();
+        // Check if phone is registered as a customer (handles format variants)
+        $user = $this->resolveUser($phone);
 
         if (!$user) {
             return response()->json([
@@ -260,10 +282,8 @@ class OtpVerificationController extends Controller
         // OTP is valid — clean up and authenticate
         PhoneOtp::where('phone', $request->phone)->delete();
 
-        $user = User::whereHas('role', fn ($q) => $q->where('slug', 'customer'))
-            ->where('phone', $request->phone)
-            ->where('status', 'active')
-            ->first();
+        $user = $this->resolveUser($request->phone);
+        if ($user && $user->status !== 'active') $user = null;
 
         if (!$user) {
             return response()->json([
